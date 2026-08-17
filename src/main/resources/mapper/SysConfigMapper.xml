@@ -2,11 +2,37 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zfc.eldercare.core.mapper.SysConfigMapper">
 
+    <sql id="Base_Column_List">
+        id, config_key, config_value, description, create_time, update_time, deleted
+    </sql>
+
     <select id="selectValueByKey" resultType="java.lang.String">
         SELECT config_value
         FROM sys_config
         WHERE config_key = #{key} AND deleted = 0
         LIMIT 1
     </select>
+
+    <select id="selectByKey" resultType="com.zfc.eldercare.core.entity.SysConfig">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_config
+        WHERE config_key = #{key} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectAll" resultType="com.zfc.eldercare.core.entity.SysConfig">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_config
+        WHERE deleted = 0
+        ORDER BY id
+    </select>
+
+    <update id="updateValue">
+        UPDATE sys_config
+        SET config_value = #{value}
+        WHERE config_key = #{key} AND deleted = 0
+    </update>
 
 </mapper>
