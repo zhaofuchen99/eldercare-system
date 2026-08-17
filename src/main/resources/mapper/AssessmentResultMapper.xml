@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.AssessmentResultMapper">
+
+    <sql id="Base_Column_List">
+        id, user_id, questionnaire_id, answers, rule_score, ai_score, ai_suggestion, create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.AssessmentResult" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO assessment_result (user_id, questionnaire_id, answers, rule_score, ai_score, ai_suggestion)
+        VALUES (#{userId}, #{questionnaireId}, #{answers}, #{ruleScore}, #{aiScore}, #{aiSuggestion})
+    </insert>
+
+    <select id="selectById" resultType="com.zfc.eldercare.core.entity.AssessmentResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM assessment_result
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectPageByUserId" resultType="com.zfc.eldercare.core.entity.AssessmentResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM assessment_result
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+</mapper>

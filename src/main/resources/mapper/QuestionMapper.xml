@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.QuestionMapper">
+
+    <sql id="Base_Column_List">
+        id, questionnaire_id, content, type, options, score_mode, max_score, sort_order, create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.Question" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO question (questionnaire_id, content, type, options, score_mode, max_score, sort_order)
+        VALUES (#{questionnaireId}, #{content}, #{type}, #{options}, #{scoreMode}, #{maxScore}, #{sortOrder})
+    </insert>
+
+    <select id="selectById" resultType="com.zfc.eldercare.core.entity.Question">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM question
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectByQuestionnaireId" resultType="com.zfc.eldercare.core.entity.Question">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM question
+        WHERE questionnaire_id = #{questionnaireId} AND deleted = 0
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <update id="update">
+        UPDATE question
+        SET content = #{content}, type = #{type}, options = #{options}, score_mode = #{scoreMode},
+            max_score = #{maxScore}, sort_order = #{sortOrder}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="delete">
+        UPDATE question
+        SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="deleteByQuestionnaireId">
+        UPDATE question
+        SET deleted = 1
+        WHERE questionnaire_id = #{questionnaireId} AND deleted = 0
+    </update>
+
+</mapper>

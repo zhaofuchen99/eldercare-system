@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.QuestionnaireMapper">
+
+    <sql id="Base_Column_List">
+        id, title, description, status, total_score, pass_score, grade_rules, create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.Questionnaire" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO questionnaire (title, description, status, total_score, pass_score, grade_rules)
+        VALUES (#{title}, #{description}, #{status}, #{totalScore}, #{passScore}, #{gradeRules})
+    </insert>
+
+    <select id="selectById" resultType="com.zfc.eldercare.core.entity.Questionnaire">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM questionnaire
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectByIds" resultType="com.zfc.eldercare.core.entity.Questionnaire">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM questionnaire
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="selectPublished" resultType="com.zfc.eldercare.core.entity.Questionnaire">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM questionnaire
+        WHERE deleted = 0 AND status = 'PUBLISHED'
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <select id="selectPage" resultType="com.zfc.eldercare.core.entity.Questionnaire">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM questionnaire
+        WHERE deleted = 0
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <update id="update">
+        UPDATE questionnaire
+        SET title = #{title}, description = #{description}, total_score = #{totalScore},
+            pass_score = #{passScore}, grade_rules = #{gradeRules}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="updateStatus">
+        UPDATE questionnaire
+        SET status = #{status}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="delete">
+        UPDATE questionnaire
+        SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>
