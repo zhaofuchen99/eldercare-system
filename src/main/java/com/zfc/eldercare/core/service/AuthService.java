@@ -30,4 +30,7 @@ public interface AuthService {
 
     /** 修改密码（登录状态）：校验原密码后重置，强制所有设备下线 */
     void changePassword(Long userId, ChangePasswordDTO dto);
+
+    /** 强制某用户所有设备下线：删除全部 Refresh Token + 用户级黑名单（文档 5.1，供管理端重置密码等复用） */
+    void forceLogoutUser(Long userId);
 }

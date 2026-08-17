@@ -58,6 +58,35 @@
         SELECT COUNT(*) FROM `user` WHERE role = 'MEMBER' AND deleted = 0 AND create_time &gt;= CURDATE()
     </select>
 
+    <select id="selectMemberPage" resultType="com.zfc.eldercare.core.entity.User">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `user`
+        WHERE role = 'MEMBER' AND deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (real_name LIKE CONCAT('%', #{keyword}, '%') OR phone LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        <if test="memberLevel != null and memberLevel != ''">
+            AND member_level = #{memberLevel}
+        </if>
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <update id="updateStatus">
+        UPDATE `user`
+        SET status = #{status}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="updateMemberLevel">
+        UPDATE `user`
+        SET member_level = #{memberLevel}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
     <update id="deductPoints">
         UPDATE `user`
         SET points = points - #{amount}

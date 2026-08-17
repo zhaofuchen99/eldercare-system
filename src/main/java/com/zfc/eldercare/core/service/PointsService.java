@@ -40,4 +40,11 @@ public interface PointsService {
      * 返回清理的批次总数。
      */
     int expireExpiredPoints();
+
+    /**
+     * 管理员手动调整积分（文档 5.8 管理员调增/调减）：
+     * 调增写 ADMIN_ADJUST 获得批次（1 年有效）；调减原子扣减 user.points 后按 FIFO 消费
+     * 写 ADMIN_ADJUST 流水（batch_tx_id 指向被扣批次）。返回调整后积分余额。
+     */
+    int adjustPoints(Long userId, int delta);
 }

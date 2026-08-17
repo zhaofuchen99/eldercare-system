@@ -168,4 +168,10 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenMapper.deleteByUserId(userId);
         jwtUtil.addUserToBlacklist(userId);
     }
+
+    @Override
+    @Transactional
+    public void forceLogoutUser(Long userId) {
+        forceLogout(userId);
+    }
 }

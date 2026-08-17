@@ -36,4 +36,15 @@ public interface UserMapper {
 
     /** 今日新增会员数（role=MEMBER、未删除、当日创建） */
     long countTodayNewMembers();
+
+    /** 会员分页（管理端，可按关键字/状态/等级筛选，role=MEMBER），配合 PageHelper */
+    java.util.List<User> selectMemberPage(@Param("keyword") String keyword,
+                                          @Param("status") String status,
+                                          @Param("memberLevel") String memberLevel);
+
+    /** 更新用户状态（启用/禁用） */
+    int updateStatus(@Param("id") Long id, @Param("status") String status);
+
+    /** 更新会员等级 */
+    int updateMemberLevel(@Param("id") Long id, @Param("memberLevel") String memberLevel);
 }

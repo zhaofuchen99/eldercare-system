@@ -4,6 +4,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.zfc.eldercare.core.entity.PointTransaction;
 import com.zfc.eldercare.core.entity.User;
+import com.zfc.eldercare.core.exception.BusinessException;
 import com.zfc.eldercare.core.mapper.PointTransactionMapper;
 import com.zfc.eldercare.core.mapper.SysConfigMapper;
 import com.zfc.eldercare.core.mapper.UserMapper;
@@ -44,6 +45,10 @@ public class PointsServiceImpl implements PointsService {
     /** 过期清理流水类型与说明（文档 5.8 积分过期策略） */
     private static final String TYPE_EXPIRE = "EXPIRE";
     private static final String DESC_EXPIRE = "积分过期清理";
+    /** 管理员调整流水类型与说明（文档 5.8 管理员调增/调减） */
+    private static final String TYPE_ADMIN_ADJUST = "ADMIN_ADJUST";
+    private static final String DESC_ADMIN_ADJUST_INCREASE = "管理员调整增加积分";
+    private static final String DESC_ADMIN_ADJUST_DECREASE = "管理员调整减少积分";
 
     private final UserMapper userMapper;
     private final PointTransactionMapper pointTransactionMapper;
@@ -73,32 +78,7 @@ public class PointsServiceImpl implements PointsService {
     @Override
     @Transactional
     public void consumeAppointment(Long userId, Long refId, int amount) {
-        if (amount <= 0) {
-            return;
-        }
-        // 取可用获得批次（FIFO：未过期、剩余>0），行锁防并发双扣
-        List<PointTransaction> batches = pointTransactionMapper.selectConsumableBatches(userId);
-        int remaining = amount;
-        int balance = userMapper.selectById(userId).getPoints();
-        for (PointTransaction batch : batches) {
-            if (remaining <= 0) {
-                break;
-            }
-            int use = Math.min(remaining, batch.getRemainAmount());
-            pointTransactionMapper.decreaseRemain(batch.getId(), use);
-            PointTransaction tx = new PointTransaction();
-            tx.setUserId(userId);
-            tx.setType(TYPE_APPOINTMENT_CONSUME);
-            tx.setChangeAmount(-use);
-            tx.setBalanceAfter(balance);
-            tx.setRemainAmount(0);
-            tx.setBatchTxId(batch.getId());
-            tx.setDescription(DESC_APPOINTMENT_CONSUME);
-            tx.setRefId(refId);
-            pointTransactionMapper.insert(tx);
-            balance -= use;
-            remaining -= use;
-        }
+        consumeFifo(userId, amount, TYPE_APPOINTMENT_CONSUME, DESC_APPOINTMENT_CONSUME, refId);
     }
 
     @Override
@@ -172,10 +152,63 @@ public class PointsServiceImpl implements PointsService {
         return expiredCount;
     }
 
+    @Override
+    @Transactional
+    public int adjustPoints(Long userId, int delta) {
+        if (delta == 0) {
+            return userMapper.selectById(userId).getPoints();
+        }
+        if (delta > 0) {
+            // 调增：写获得批次（1 年有效，FIFO 可消费）
+            grant(userId, delta, TYPE_ADMIN_ADJUST, DESC_ADMIN_ADJUST_INCREASE);
+        } else {
+            // 调减：原子扣减余额后按 FIFO 消费（与预约消费同口径）
+            if (userMapper.deductPoints(userId, -delta) == 0) {
+                throw new BusinessException("积分不足，无法调减");
+            }
+            consumeFifo(userId, -delta, TYPE_ADMIN_ADJUST, DESC_ADMIN_ADJUST_DECREASE, null);
+        }
+        return userMapper.selectById(userId).getPoints();
+    }
+
     /** 读 sys_config，缺失时用默认值 */
     private int readConfig(String key, int defaultVal) {
         String value = sysConfigMapper.selectValueByKey(key);
         return value != null ? Integer.parseInt(value) : defaultVal;
+    }
+
+    /**
+     * 通用 FIFO 消费：按最早获得且未过期的批次逐笔扣减，每个被扣批次写一条消费流水
+     * （batch_tx_id 指向批次，类型/说明/业务 refId 由调用方指定）。调用方须先完成 user.points
+     * 的原子扣减（UserMapper.deductPoints）。
+     */
+    private void consumeFifo(Long userId, int amount, String type, String description, Long refId) {
+        if (amount <= 0) {
+            return;
+        }
+        // 取可用获得批次（FIFO：未过期、剩余>0），行锁防并发双扣
+        List<PointTransaction> batches = pointTransactionMapper.selectConsumableBatches(userId);
+        int remaining = amount;
+        int balance = userMapper.selectById(userId).getPoints();
+        for (PointTransaction batch : batches) {
+            if (remaining <= 0) {
+                break;
+            }
+            int use = Math.min(remaining, batch.getRemainAmount());
+            pointTransactionMapper.decreaseRemain(batch.getId(), use);
+            PointTransaction tx = new PointTransaction();
+            tx.setUserId(userId);
+            tx.setType(type);
+            tx.setChangeAmount(-use);
+            tx.setBalanceAfter(balance);
+            tx.setRemainAmount(0);
+            tx.setBatchTxId(batch.getId());
+            tx.setDescription(description);
+            tx.setRefId(refId);
+            pointTransactionMapper.insert(tx);
+            balance -= use;
+            remaining -= use;
+        }
     }
 
     /**
