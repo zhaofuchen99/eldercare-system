@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.AiMessageMapper">
+
+    <sql id="Base_Column_List">
+        id, session_id, user_id, role, message, status, create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.AiConversationMessage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ai_conversation_message (session_id, user_id, role, message, status)
+        VALUES (#{sessionId}, #{userId}, #{role}, #{message}, #{status})
+    </insert>
+
+    <select id="selectPageBySessionId" resultType="com.zfc.eldercare.core.entity.AiConversationMessage">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM ai_conversation_message
+        WHERE session_id = #{sessionId} AND deleted = 0
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <select id="selectRecentBySessionId" resultType="com.zfc.eldercare.core.entity.AiConversationMessage">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM ai_conversation_message
+        WHERE session_id = #{sessionId} AND deleted = 0 AND status = 'SUCCESS'
+        ORDER BY create_time DESC, id DESC
+        LIMIT #{limit}
+    </select>
+
+    <update id="deleteBySessionId">
+        UPDATE ai_conversation_message
+        SET deleted = 1
+        WHERE session_id = #{sessionId} AND deleted = 0
+    </update>
+
+</mapper>

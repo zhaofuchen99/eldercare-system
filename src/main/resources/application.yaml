@@ -28,15 +28,13 @@ spring:
       database: 0
       timeout: 3000ms
 
-  # ===== AI（DeepSeek，OpenAI 兼容接口）=====
-  # 说明：spring-ai 依赖在写 AI 模块时再加入；此处仅为配置占位，未加依赖前不生效
+  # ===== AI（DeepSeek，OpenAI 兼容接口，文档 5.4）=====
   ai:
     openai:
-      api-key: ${DEEPSEEK_API_KEY:}
+      # 生产必须用环境变量 DEEPSEEK_API_KEY 注入真实 Key；
+      # 这里给非空占位默认值，保证未配 Key 时应用也能启动（AI 调用会由业务层降级为失败标记）
+      api-key: ${DEEPSEEK_API_KEY:sk-eldercare-dev-placeholder}
       base-url: https://api.deepseek.com
-      chat:
-        options:
-          model: deepseek-chat
 
 # ===== MyBatis =====
 mybatis:
