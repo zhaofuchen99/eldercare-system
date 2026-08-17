@@ -24,6 +24,14 @@
         FOR UPDATE
     </select>
 
+    <select id="selectPageByUserId" resultType="com.zfc.eldercare.core.entity.PointTransaction">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM point_transaction
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY create_time DESC, id DESC
+    </select>
+
     <select id="selectConsumeByRef" resultType="com.zfc.eldercare.core.entity.PointTransaction">
         SELECT
         <include refid="Base_Column_List"/>

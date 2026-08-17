@@ -17,6 +17,9 @@ public interface PointTransactionMapper {
     /** 可用获得批次（FIFO：未过期、剩余 > 0，按过期时间升序），FOR UPDATE 锁定防并发双扣 */
     List<PointTransaction> selectConsumableBatches(@Param("userId") Long userId);
 
+    /** 会员端：我的积分流水分页（按时间倒序，文档 5.8 积分明细） */
+    List<PointTransaction> selectPageByUserId(@Param("userId") Long userId);
+
     /** 预约消费流水（取消退还时还原批次用） */
     List<PointTransaction> selectConsumeByRef(@Param("refId") Long refId);
 

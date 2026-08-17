@@ -1,5 +1,8 @@
 package com.zfc.eldercare.core.service;
 
+import com.zfc.eldercare.core.vo.PageVO;
+import com.zfc.eldercare.core.vo.PointTransactionVO;
+
 /**
  * 积分服务（文档 5.8 / 6.3.18）。
  * 获得类：注册/评测完成；消费类：体检预约 FIFO 扣减与取消退还。
@@ -27,4 +30,7 @@ public interface PointsService {
      * （原有效期不重新起算），并同步原子加回 user.points。返回实际退还积分数。
      */
     int refundAppointment(Long userId, Long refId);
+
+    /** 积分明细分页（会员端，按时间倒序：获得/消费/过期等流水） */
+    PageVO<PointTransactionVO> pointPage(Long userId, int page, int size);
 }

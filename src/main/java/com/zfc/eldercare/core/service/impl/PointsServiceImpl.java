@@ -1,11 +1,15 @@
 package com.zfc.eldercare.core.service.impl;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.zfc.eldercare.core.entity.PointTransaction;
 import com.zfc.eldercare.core.entity.User;
 import com.zfc.eldercare.core.mapper.PointTransactionMapper;
 import com.zfc.eldercare.core.mapper.SysConfigMapper;
 import com.zfc.eldercare.core.mapper.UserMapper;
 import com.zfc.eldercare.core.service.PointsService;
+import com.zfc.eldercare.core.vo.PageVO;
+import com.zfc.eldercare.core.vo.PointTransactionVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -108,6 +112,16 @@ public class PointsServiceImpl implements PointsService {
         pointTransactionMapper.softDeleteByRef(refId);
         userMapper.updatePoints(userId, total);
         return total;
+    }
+
+    @Override
+    public PageVO<PointTransactionVO> pointPage(Long userId, int page, int size) {
+        PageHelper.startPage(page, size);
+        List<PointTransaction> list = pointTransactionMapper.selectPageByUserId(userId);
+        PageInfo<PointTransaction> pageInfo = new PageInfo<>(list);
+        List<PointTransactionVO> voList = list.stream().map(PointTransactionVO::from).toList();
+        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
+                pageInfo.getTotal(), pageInfo.getPages(), voList);
     }
 
     /** 读 sys_config，缺失时用默认值 */
