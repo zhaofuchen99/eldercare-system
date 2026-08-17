@@ -28,6 +28,10 @@ public class PointsServiceImpl implements PointsService {
     private static final String KEY_ASSESSMENT_BONUS = "health_assessment_bonus_points";
     /** 默认评测赠送积分（配置缺失时兜底） */
     private static final int DEFAULT_ASSESSMENT_BONUS = 20;
+    /** 活动签到赠送积分配置键 */
+    private static final String KEY_CHECKIN_BONUS = "checkin_bonus_points";
+    /** 默认签到赠送积分（配置缺失时兜底） */
+    private static final int DEFAULT_CHECKIN_BONUS = 50;
     /** 体检预约消费流水类型与说明 */
     private static final String TYPE_APPOINTMENT_CONSUME = "APPOINTMENT_CONSUME";
     private static final String DESC_APPOINTMENT_CONSUME = "体检预约扣除积分";
@@ -48,6 +52,13 @@ public class PointsServiceImpl implements PointsService {
     public void assessmentBonus(Long userId) {
         grant(userId, readConfig(KEY_ASSESSMENT_BONUS, DEFAULT_ASSESSMENT_BONUS),
                 "ASSESSMENT_COMPLETE", "完成健康评测赠送积分");
+    }
+
+    @Override
+    @Transactional
+    public void checkinBonus(Long userId) {
+        grant(userId, readConfig(KEY_CHECKIN_BONUS, DEFAULT_CHECKIN_BONUS),
+                "ACTIVITY_CHECKIN", "活动签到赠送积分");
     }
 
     @Override

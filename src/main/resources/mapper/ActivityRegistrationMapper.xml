@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.ActivityRegistrationMapper">
+
+    <sql id="Base_Column_List">
+        id, user_id, activity_id, check_in_status, check_in_time, create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.ActivityRegistration" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO activity_registration (user_id, activity_id, check_in_status)
+        VALUES (#{userId}, #{activityId}, #{checkInStatus})
+    </insert>
+
+    <select id="selectByUserAndActivity" resultType="com.zfc.eldercare.core.entity.ActivityRegistration">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activity_registration
+        WHERE user_id = #{userId} AND activity_id = #{activityId} AND deleted = 0
+    </select>
+
+    <select id="selectPageByUserId" resultType="com.zfc.eldercare.core.entity.ActivityRegistration">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activity_registration
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <select id="selectByActivityId" resultType="com.zfc.eldercare.core.entity.ActivityRegistration">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activity_registration
+        WHERE activity_id = #{activityId} AND deleted = 0
+        ORDER BY create_time ASC, id ASC
+    </select>
+
+    <!-- 原子签到：仅未签到成功，返回 0 表示重复签到 -->
+    <update id="checkIn">
+        UPDATE activity_registration
+        SET check_in_status = 'CHECKED_IN', check_in_time = NOW()
+        WHERE id = #{id} AND deleted = 0 AND check_in_status != 'CHECKED_IN'
+    </update>
+
+</mapper>

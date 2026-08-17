@@ -12,6 +12,9 @@ public interface PointsService {
     /** 完成健康评测赠送积分（默认 20，sys_config 可配） */
     void assessmentBonus(Long userId);
 
+    /** 活动签到赠送积分（默认 50，sys_config checkin_bonus_points 可配） */
+    void checkinBonus(Long userId);
+
     /**
      * 体检预约消费积分：按 FIFO 扣减最早获得且未过期的积分批次，每个被扣批次生成一条
      * APPOINTMENT_CONSUME 消费流水（batch_tx_id 指向批次）。调用方须在同一事务内先完成

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.CommunityActivityMapper">
+
+    <sql id="Base_Column_List">
+        id, title, cover_url, content, location, registration_start_time, registration_end_time,
+        activity_start_time, activity_end_time, max_participants, current_participants, status,
+        create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.CommunityActivity" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO community_activity (title, cover_url, content, location, registration_start_time,
+                                        registration_end_time, activity_start_time, activity_end_time,
+                                        max_participants, current_participants, status)
+        VALUES (#{title}, #{coverUrl}, #{content}, #{location}, #{registrationStartTime},
+                #{registrationEndTime}, #{activityStartTime}, #{activityEndTime},
+                #{maxParticipants}, #{currentParticipants}, #{status})
+    </insert>
+
+    <select id="selectById" resultType="com.zfc.eldercare.core.entity.CommunityActivity">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM community_activity
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectByIds" resultType="com.zfc.eldercare.core.entity.CommunityActivity">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM community_activity
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="selectPage" resultType="com.zfc.eldercare.core.entity.CommunityActivity">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM community_activity
+        WHERE deleted = 0
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <select id="selectPublished" resultType="com.zfc.eldercare.core.entity.CommunityActivity">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM community_activity
+        WHERE deleted = 0 AND status != 'DRAFT'
+        ORDER BY activity_start_time IS NULL, activity_start_time DESC, id DESC
+    </select>
+
+    <update id="update" parameterType="com.zfc.eldercare.core.entity.CommunityActivity">
+        UPDATE community_activity
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="coverUrl != null">cover_url = #{coverUrl},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="location != null">location = #{location},</if>
+            <if test="registrationStartTime != null">registration_start_time = #{registrationStartTime},</if>
+            <if test="registrationEndTime != null">registration_end_time = #{registrationEndTime},</if>
+            <if test="activityStartTime != null">activity_start_time = #{activityStartTime},</if>
+            <if test="activityEndTime != null">activity_end_time = #{activityEndTime},</if>
+            <if test="maxParticipants != null">max_participants = #{maxParticipants},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="delete">
+        UPDATE community_activity
+        SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 原子增加报名人数：仅未达上限时成功（max_participants IS NULL 表示不限） -->
+    <update id="incrementParticipants">
+        UPDATE community_activity
+        SET current_participants = current_participants + 1
+        WHERE id = #{id} AND deleted = 0
+          AND (max_participants IS NULL OR current_participants &lt; max_participants)
+    </update>
+
+</mapper>

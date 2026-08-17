@@ -438,8 +438,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         }).toList();
     }
 
+    /** 按 key 建映射；调用方保证 key 不重复（按 distinct id 批量查询） */
     private <T, K> Map<K, T> toMap(List<T> list, Function<T, K> keyFn) {
-        return list.stream().collect(Collectors.toMap(keyFn, Function.identity(), (a, b) -> a));
+        return list.stream().collect(Collectors.toMap(keyFn, Function.identity()));
     }
 
     /** 生成 5 分钟有效的报告下载签名链接（文档 5.5 防盗链） */
