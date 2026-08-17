@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.MessageMapper">
+
+    <sql id="Base_Column_List">
+        id, user_id, title, content, type, is_read, create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.Message" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO message (user_id, title, content, type)
+        VALUES (#{userId}, #{title}, #{content}, #{type})
+    </insert>
+
+</mapper>

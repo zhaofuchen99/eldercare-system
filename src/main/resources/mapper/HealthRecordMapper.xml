@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.HealthRecordMapper">
+
+    <sql id="Base_Column_List">
+        id, user_id, systolic, diastolic, blood_sugar, heart_rate, weight, bmi,
+        memo, recorded_time, create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.HealthRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO health_record (user_id, systolic, diastolic, blood_sugar, heart_rate, weight, bmi, memo, recorded_time)
+        VALUES (#{userId}, #{systolic}, #{diastolic}, #{bloodSugar}, #{heartRate}, #{weight}, #{bmi}, #{memo}, #{recordedTime})
+    </insert>
+
+    <select id="selectByUserId" resultType="com.zfc.eldercare.core.entity.HealthRecord">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM health_record
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY recorded_time DESC, id DESC
+    </select>
+
+    <select id="selectSince" resultType="com.zfc.eldercare.core.entity.HealthRecord">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM health_record
+        WHERE user_id = #{userId} AND deleted = 0 AND recorded_time &gt;= #{startTime}
+        ORDER BY recorded_time ASC, id ASC
+    </select>
+
+</mapper>

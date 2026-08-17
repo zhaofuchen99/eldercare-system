@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.HealthGuidanceMapper">
+
+    <sql id="Base_Column_List">
+        id, user_id, type, indicator, content, is_read, create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.HealthGuidance" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO health_guidance (user_id, type, indicator, content)
+        VALUES (#{userId}, #{type}, #{indicator}, #{content})
+    </insert>
+
+    <select id="selectTodayByIndicator" resultType="com.zfc.eldercare.core.entity.HealthGuidance">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM health_guidance
+        WHERE user_id = #{userId} AND indicator = #{indicator} AND deleted = 0
+          AND DATE(create_time) = CURDATE()
+        LIMIT 1
+    </select>
+
+</mapper>
