@@ -50,6 +50,14 @@
         WHERE id = #{id} AND deleted = 0
     </update>
 
+    <select id="countMembers" resultType="long">
+        SELECT COUNT(*) FROM `user` WHERE role = 'MEMBER' AND deleted = 0
+    </select>
+
+    <select id="countTodayNewMembers" resultType="long">
+        SELECT COUNT(*) FROM `user` WHERE role = 'MEMBER' AND deleted = 0 AND create_time &gt;= CURDATE()
+    </select>
+
     <update id="deductPoints">
         UPDATE `user`
         SET points = points - #{amount}

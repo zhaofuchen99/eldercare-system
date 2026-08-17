@@ -34,4 +34,10 @@ public interface AppointmentMapper {
 
     /** 取消预约（仅状态更新；积分/名额退还在服务层处理） */
     int cancelById(@Param("id") Long id);
+
+    /** 今日预约数（文档 5.9 仪表盘） */
+    long countToday();
+
+    /** 待完成预约数（状态为待确认/已确认，即 PENDING/CONFIRMED，文档 5.9） */
+    long countPending();
 }

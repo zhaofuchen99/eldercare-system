@@ -61,4 +61,12 @@
         WHERE id = #{id} AND deleted = 0
     </update>
 
+    <select id="countToday" resultType="long">
+        SELECT COUNT(*) FROM appointment WHERE deleted = 0 AND create_time &gt;= CURDATE()
+    </select>
+
+    <select id="countPending" resultType="long">
+        SELECT COUNT(*) FROM appointment WHERE deleted = 0 AND status IN ('PENDING', 'CONFIRMED')
+    </select>
+
 </mapper>

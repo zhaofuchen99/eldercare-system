@@ -31,7 +31,7 @@
         <include refid="Base_Column_List"/>
         FROM activity_registration
         WHERE activity_id = #{activityId} AND deleted = 0
-        ORDER BY create_time ASC, id ASC
+        ORDER BY create_time , id
     </select>
 
     <!-- 原子签到：仅未签到成功，返回 0 表示重复签到 -->
@@ -40,5 +40,9 @@
         SET check_in_status = 'CHECKED_IN', check_in_time = NOW()
         WHERE id = #{id} AND deleted = 0 AND check_in_status != 'CHECKED_IN'
     </update>
+
+    <select id="countToday" resultType="long">
+        SELECT COUNT(*) FROM activity_registration WHERE deleted = 0 AND create_time &gt;= CURDATE()
+    </select>
 
 </mapper>

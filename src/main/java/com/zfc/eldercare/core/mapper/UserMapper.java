@@ -30,4 +30,10 @@ public interface UserMapper {
 
     /** 原子扣减积分（消费）：points >= amount 才成功，返回受影响行数（0=积分不足） */
     int deductPoints(@Param("id") Long id, @Param("amount") int amount);
+
+    /** 会员总数（role=MEMBER 且未删除，文档 5.9 仪表盘） */
+    long countMembers();
+
+    /** 今日新增会员数（role=MEMBER、未删除、当日创建） */
+    long countTodayNewMembers();
 }

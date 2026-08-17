@@ -25,4 +25,7 @@ public interface ActivityRegistrationMapper {
 
     /** 原子签到：仅未签到成功，返回受影响行数（0=重复签到） */
     int checkIn(@Param("id") Long id);
+
+    /** 今日活动报名数（文档 5.9 仪表盘） */
+    long countToday();
 }
