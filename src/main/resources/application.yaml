@@ -1,3 +1,45 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: eldercare-system
+
+  # ===== 数据源 MySQL 9.7.2 =====
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 本地开发：请把 password 改成你本机 MySQL 的真实密码
+    # 生产环境：密码通过环境变量 DB_PASSWORD 注入，切勿写死到代码仓库
+    url: jdbc:mysql://localhost:3306/eldercare?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: ${DB_PASSWORD:09010402}
+    hikari:
+      maximum-pool-size: 16
+      minimum-idle: 4
+      connection-timeout: 30000
+
+  # ===== Redis 8.8.0 =====
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      # 本地无密码可留空，否则填你的 Redis 密码；生产用环境变量 REDIS_PASSWORD
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 3000ms
+
+# ===== MyBatis =====
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.zfc.eldercare.core.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    # 开发期打印 SQL 日志，生产环境建议移除
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+# ===== PageHelper 分页 =====
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+  params: count=countSql
