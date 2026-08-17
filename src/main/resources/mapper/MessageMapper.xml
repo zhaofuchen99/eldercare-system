@@ -11,4 +11,57 @@
         VALUES (#{userId}, #{title}, #{content}, #{type})
     </insert>
 
+    <select id="selectById" resultType="com.zfc.eldercare.core.entity.Message">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM message
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectPageByUserId" resultType="com.zfc.eldercare.core.entity.Message">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM message
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY is_read , create_time DESC, id DESC
+    </select>
+
+    <select id="selectPage" resultType="com.zfc.eldercare.core.entity.Message">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM message
+        WHERE deleted = 0
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+        <if test="type != null and type != ''">
+            AND type = #{type}
+        </if>
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*)
+        FROM message
+        WHERE user_id = #{userId} AND deleted = 0
+    </select>
+
+    <select id="countUnreadByUserId" resultType="long">
+        SELECT COUNT(*)
+        FROM message
+        WHERE user_id = #{userId} AND deleted = 0 AND is_read = 0
+    </select>
+
+    <update id="markRead">
+        UPDATE message
+        SET is_read = 1
+        WHERE id = #{id} AND user_id = #{userId} AND deleted = 0 AND is_read != 1
+    </update>
+
+    <update id="delete">
+        UPDATE message
+        SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
 </mapper>
