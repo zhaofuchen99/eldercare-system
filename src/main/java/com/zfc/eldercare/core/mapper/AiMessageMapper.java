@@ -3,6 +3,7 @@ package com.zfc.eldercare.core.mapper;
 import com.zfc.eldercare.core.entity.AiConversationMessage;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -20,4 +21,7 @@ public interface AiMessageMapper {
 
     /** 会话删除时一并逻辑删除其全部消息（文档 5.4） */
     int deleteBySessionId(@Param("sessionId") Long sessionId);
+
+    /** 物理清理过期消息（创建时间早于指定时间或已逻辑删除，文档 5.12 保留策略 6 个月） */
+    int deleteExpired(@Param("beforeTime") LocalDateTime beforeTime);
 }

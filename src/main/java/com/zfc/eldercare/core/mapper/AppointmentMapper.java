@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -40,4 +41,10 @@ public interface AppointmentMapper {
 
     /** 待完成预约数（状态为待确认/已确认，即 PENDING/CONFIRMED，文档 5.9） */
     long countPending();
+
+    /** 归档过期历史预约（保留 2 年，逻辑删除，文档 5.12） */
+    int archiveExpired(@Param("beforeTime") LocalDateTime beforeTime);
+
+    /** 次日预约提醒：已确认且时段日期为指定日期的预约（文档 5.12） */
+    List<Appointment> selectConfirmedOnDate(@Param("appointDate") LocalDate appointDate);
 }

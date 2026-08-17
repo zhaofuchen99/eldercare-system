@@ -69,4 +69,19 @@
         SELECT COUNT(*) FROM appointment WHERE deleted = 0 AND status IN ('PENDING', 'CONFIRMED')
     </select>
 
+    <!-- 归档过期历史预约（保留 2 年，逻辑删除，文档 5.12） -->
+    <update id="archiveExpired">
+        UPDATE appointment
+        SET deleted = 1
+        WHERE deleted = 0 AND create_time &lt; #{beforeTime}
+    </update>
+
+    <select id="selectConfirmedOnDate" resultType="com.zfc.eldercare.core.entity.Appointment">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM appointment a
+        WHERE a.deleted = 0 AND a.status = 'CONFIRMED'
+          AND EXISTS (SELECT 1 FROM appointment_slot s WHERE s.id = a.slot_id AND s.appoint_date = #{appointDate})
+    </select>
+
 </mapper>

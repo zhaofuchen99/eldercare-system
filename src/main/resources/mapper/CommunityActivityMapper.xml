@@ -81,4 +81,11 @@
           AND (max_participants IS NULL OR current_participants &lt; max_participants)
     </update>
 
+    <select id="selectStartingOn" resultType="com.zfc.eldercare.core.entity.CommunityActivity">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM community_activity
+        WHERE deleted = 0 AND status != 'DRAFT' AND DATE(activity_start_time) = #{date}
+    </select>
+
 </mapper>

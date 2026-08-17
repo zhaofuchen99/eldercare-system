@@ -69,4 +69,10 @@ public interface AppointmentService {
 
     /** 上传体检报告（PDF ≤20MB，自动置为已完成） */
     void uploadReport(Long appointmentId, MultipartFile file, Long adminId);
+
+    /** 归档过期历史预约（保留 2 年，逻辑删除，文档 5.12 定时任务） */
+    void archiveExpired();
+
+    /** 推送次日预约提醒短信（文档 5.12 定时任务） */
+    void sendTomorrowReminders();
 }

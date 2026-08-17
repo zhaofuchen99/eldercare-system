@@ -62,6 +62,11 @@ public class MockSmsServiceImpl implements SmsService {
         smsCodeMapper.markUsed(record.getId());
     }
 
+    @Override
+    public void cleanExpiredCodes() {
+        smsCodeMapper.deleteExpired();
+    }
+
     /** 限流：同一手机号 3 次/分钟、10 次/天（文档 8.4） */
     private void rateLimit(String phone) {
         // 3 次/分钟

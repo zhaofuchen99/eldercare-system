@@ -93,8 +93,9 @@ public class AssessmentServiceImpl implements AssessmentService {
             throw new BusinessException("该问卷暂无可答题目的");
         }
 
+        // 每题一个答案，qid 唯一，无需合并函数
         Map<Long, AssessmentSubmitDTO.AnswerItemDTO> answerMap = dto.items().stream()
-                .collect(Collectors.toMap(AssessmentSubmitDTO.AnswerItemDTO::qid, a -> a, (a, b) -> a));
+                .collect(Collectors.toMap(AssessmentSubmitDTO.AnswerItemDTO::qid, a -> a));
 
         // 1) 逐题校验答案、计算计分题得分、组装答案快照与 AI 上下文
         List<SnapshotVO.SnapshotItemVO> snapshotItems = new ArrayList<>();

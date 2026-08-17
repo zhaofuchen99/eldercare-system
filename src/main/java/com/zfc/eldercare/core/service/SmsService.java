@@ -24,4 +24,7 @@ public interface SmsService {
      * 开发期为日志模拟；接入真实短信后替换实现，业务代码无需改动。
      */
     void sendText(String phone, String content);
+
+    /** 清理过期短信验证码（每 10 分钟定时任务，文档 5.12） */
+    void cleanExpiredCodes();
 }

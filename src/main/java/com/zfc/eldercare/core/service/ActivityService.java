@@ -53,4 +53,7 @@ public interface ActivityService {
 
     /** 活动报名列表（含报名人信息与签到情况） */
     List<ActivityRegistrationVO> registrations(Long activityId);
+
+    /** 推送次日开始活动提醒短信（文档 5.12 定时任务） */
+    void sendTomorrowReminders();
 }

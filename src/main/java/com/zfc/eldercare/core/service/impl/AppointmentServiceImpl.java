@@ -36,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -177,7 +178,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     public byte[] downloadReport(Long userId, Long appointmentId, long expires, String sign) {
         // 签名校验（防止盗链）
         String expected = md5(appointmentId + ":" + expires + ":" + downloadSecret);
-        if (sign == null || !expected.equals(sign)) {
+        if (!expected.equals(sign)) {
             throw new BusinessException(403, "下载链接无效");
         }
         if (expires < System.currentTimeMillis() / 1000) {
@@ -305,8 +306,9 @@ public class AppointmentServiceImpl implements AppointmentService {
             return List.of();
         }
         Set<Long> pkgIds = slots.stream().map(AppointmentSlot::getPackageId).collect(Collectors.toSet());
+        // 按套餐 ID 批量查名称，key 唯一无需合并函数
         Map<Long, String> pkgNames = appointmentPackageMapper.selectByIds(new ArrayList<>(pkgIds)).stream()
-                .collect(Collectors.toMap(AppointmentPackage::getId, AppointmentPackage::getName, (a, b) -> a));
+                .collect(Collectors.toMap(AppointmentPackage::getId, AppointmentPackage::getName));
         return slots.stream()
                 .map(s -> SlotVO.from(s, pkgNames.get(s.getPackageId())))
                 .toList();
@@ -356,6 +358,36 @@ public class AppointmentServiceImpl implements AppointmentService {
         String originalName = file.getOriginalFilename();
         appointmentMapper.uploadReport(appointmentId, relativePath,
                 StringUtils.hasText(originalName) ? originalName : "体检报告.pdf", adminId);
+    }
+
+    @Override
+    public void archiveExpired() {
+        // 保留策略：历史预约归档（保留 2 年，逻辑删除，文档 5.12）
+        appointmentMapper.archiveExpired(LocalDateTime.now().minusYears(2));
+    }
+
+    @Override
+    public void sendTomorrowReminders() {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        List<Appointment> list = appointmentMapper.selectConfirmedOnDate(tomorrow);
+        if (list.isEmpty()) {
+            return;
+        }
+        List<Long> userIds = list.stream().map(Appointment::getUserId).distinct().toList();
+        Map<Long, User> userMap = toMap(userMapper.selectByIds(userIds), User::getId);
+        for (Appointment appointment : list) {
+            User user = userMap.get(appointment.getUserId());
+            if (user == null) {
+                continue;
+            }
+            try {
+                smsService.sendText(user.getPhone(),
+                        "【智能养老社区】您明天（" + tomorrow + "）有体检预约，请按预约时间准时到场。");
+            } catch (Exception e) {
+                // 短信通知容错：失败不阻断任务
+                log.warn("预约提醒短信发送失败，预约ID={}", appointment.getId(), e);
+            }
+        }
     }
 
     // ========== 私有辅助 ==========
@@ -473,7 +505,7 @@ public class AppointmentServiceImpl implements AppointmentService {
             return List.of();
         }
         try {
-            return objectMapper.readValue(json, new TypeReference<List<String>>() {
+            return objectMapper.readValue(json, new TypeReference<>() {
             });
         } catch (Exception e) {
             log.warn("解析套餐项目 JSON 失败，items={}", json);

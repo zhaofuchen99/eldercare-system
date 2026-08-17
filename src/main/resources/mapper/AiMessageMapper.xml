@@ -34,4 +34,10 @@
         WHERE session_id = #{sessionId} AND deleted = 0
     </update>
 
+    <!-- 物理清理：创建超期（保留 6 个月）或已逻辑删除的消息，文档 5.12 -->
+    <delete id="deleteExpired">
+        DELETE FROM ai_conversation_message
+        WHERE create_time &lt; #{beforeTime} OR deleted = 1
+    </delete>
+
 </mapper>

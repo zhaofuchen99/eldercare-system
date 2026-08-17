@@ -28,4 +28,7 @@ public interface AiChatService {
 
     /** 流式对话（SSE，打字机效果）：逐字推送，结束时持久化用户消息与 AI 回复 */
     SseEmitter streamMessage(Long userId, ChatMessageDTO dto);
+
+    /** 清理过期 AI 对话消息与会话（保留 6 个月，物理删除，文档 5.12 定时任务） */
+    void cleanExpiredMessages();
 }

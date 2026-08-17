@@ -12,16 +12,19 @@ import com.zfc.eldercare.core.mapper.CommunityActivityMapper;
 import com.zfc.eldercare.core.mapper.UserMapper;
 import com.zfc.eldercare.core.service.ActivityService;
 import com.zfc.eldercare.core.service.PointsService;
+import com.zfc.eldercare.core.service.SmsService;
 import com.zfc.eldercare.core.vo.ActivityRegistrationVO;
 import com.zfc.eldercare.core.vo.ActivityVO;
 import com.zfc.eldercare.core.vo.CheckinStatusVO;
 import com.zfc.eldercare.core.vo.MyActivityVO;
 import com.zfc.eldercare.core.vo.PageVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +35,7 @@ import java.util.stream.Collectors;
  * 社区活动服务实现（详细设计文档 5.6 / 9.3 并发控制 / 5.8 签到积分）。
  * 报名：报名期校验 + 重复报名校验 + 名额原子占用（行锁）；签到：已报名校验 + 活动时间校验 + 防重复 + 签到积分。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ActivityServiceImpl implements ActivityService {
@@ -46,6 +50,7 @@ public class ActivityServiceImpl implements ActivityService {
     private final ActivityRegistrationMapper activityRegistrationMapper;
     private final UserMapper userMapper;
     private final PointsService pointsService;
+    private final SmsService smsService;
 
     // ========== 会员端 ==========
 
@@ -240,6 +245,37 @@ public class ActivityServiceImpl implements ActivityService {
                             user == null ? null : user.getPhone());
                 })
                 .toList();
+    }
+
+    @Override
+    public void sendTomorrowReminders() {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        List<CommunityActivity> activities = communityActivityMapper.selectStartingOn(tomorrow);
+        if (activities.isEmpty()) {
+            return;
+        }
+        for (CommunityActivity activity : activities) {
+            List<ActivityRegistration> registrations = activityRegistrationMapper.selectByActivityId(activity.getId());
+            if (registrations.isEmpty()) {
+                continue;
+            }
+            List<Long> userIds = registrations.stream().map(ActivityRegistration::getUserId).distinct().toList();
+            Map<Long, User> userMap = userMapper.selectByIds(userIds).stream()
+                    .collect(Collectors.toMap(User::getId, Function.identity()));
+            for (ActivityRegistration registration : registrations) {
+                User user = userMap.get(registration.getUserId());
+                if (user == null) {
+                    continue;
+                }
+                try {
+                    smsService.sendText(user.getPhone(),
+                            "【智能养老社区】您报名的活动「" + activity.getTitle() + "」将于明天（" + tomorrow + "）开始，请准时参加。");
+                } catch (Exception e) {
+                    // 短信通知容错：失败不阻断任务
+                    log.warn("活动提醒短信发送失败，活动ID={}", activity.getId(), e);
+                }
+            }
+        }
     }
 
     // ========== 私有辅助 ==========

@@ -22,6 +22,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -126,19 +127,17 @@ public class AiChatServiceImpl implements AiChatService {
 
         flux.subscribe(
                 chunk -> {
-                    if (chunk != null) {
-                        full.append(chunk);
-                        try {
-                            emitter.send(chunk);
-                        } catch (IOException e) {
-                            // 客户端中途断开：抛出进入 onError，把已接收内容保存为完整消息（不丢失，文档 5.4）
-                            throw new RuntimeException(e);
-                        }
+                    full.append(chunk);
+                    try {
+                        emitter.send(chunk);
+                    } catch (IOException e) {
+                        // 客户端中途断开：抛出进入 onError，把已接收内容保存为完整消息（不丢失，文档 5.4）
+                        throw new RuntimeException(e);
                     }
                 },
                 error -> {
                     if (saved.compareAndSet(false, true)) {
-                        if (full.length() > 0) {
+                        if (!full.isEmpty()) {
                             // AI 接口超时/断连但有部分内容：保存已接收片段
                             saveExchange(session, userContent, full.toString());
                         } else {
@@ -156,6 +155,15 @@ public class AiChatServiceImpl implements AiChatService {
                 });
 
         return emitter;
+    }
+
+    @Override
+    @Transactional
+    public void cleanExpiredMessages() {
+        // 保留策略：消息与会话均保留 6 个月（文档 6.9.3 / 5.12），超期及已逻辑删除的一并物理清理
+        LocalDateTime beforeTime = LocalDateTime.now().minusMonths(6);
+        aiMessageMapper.deleteExpired(beforeTime);
+        aiSessionMapper.deleteExpired(beforeTime);
     }
 
     // ========== 私有辅助 ==========

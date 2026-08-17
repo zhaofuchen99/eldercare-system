@@ -32,4 +32,7 @@ public interface CommunityActivityMapper {
 
     /** 原子增加报名人数：仅未达到人数上限时成功（NULL 表示不限），文档 9.3 并发控制 */
     int incrementParticipants(@Param("id") Long id);
+
+    /** 指定日期开始的活动（已发布，活动提醒推送用，文档 5.12） */
+    List<CommunityActivity> selectStartingOn(@Param("date") java.time.LocalDate date);
 }

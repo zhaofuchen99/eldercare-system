@@ -18,4 +18,7 @@ public interface SmsCodeMapper {
 
     /** 标记验证码已使用 */
     int markUsed(@Param("id") Long id);
+
+    /** 物理清理过期验证码（expire_time < NOW()，文档 5.12 每 10 分钟） */
+    int deleteExpired();
 }
