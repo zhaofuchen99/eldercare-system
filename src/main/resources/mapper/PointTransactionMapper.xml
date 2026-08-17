@@ -46,6 +46,22 @@
         WHERE id = #{id} AND remain_amount &gt;= #{delta}
     </update>
 
+    <!-- 每日过期清理（文档 5.8/5.12）：已过期且未消费的获得批次，行锁防与 FIFO 消费并发 -->
+    <select id="selectExpiredBatches" resultType="com.zfc.eldercare.core.entity.PointTransaction">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM point_transaction
+        WHERE deleted = 0 AND remain_amount &gt; 0 AND expire_time &lt; NOW()
+        ORDER BY user_id, id
+        FOR UPDATE
+    </select>
+
+    <update id="clearRemain">
+        UPDATE point_transaction
+        SET remain_amount = 0
+        WHERE id = #{id} AND remain_amount &gt; 0
+    </update>
+
     <update id="increaseRemain">
         UPDATE point_transaction
         SET remain_amount = remain_amount + #{delta}

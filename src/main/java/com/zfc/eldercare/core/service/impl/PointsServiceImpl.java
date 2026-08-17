@@ -15,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 积分服务实现（文档 5.8 / 6.3.18）。
@@ -39,6 +41,9 @@ public class PointsServiceImpl implements PointsService {
     /** 体检预约消费流水类型与说明 */
     private static final String TYPE_APPOINTMENT_CONSUME = "APPOINTMENT_CONSUME";
     private static final String DESC_APPOINTMENT_CONSUME = "体检预约扣除积分";
+    /** 过期清理流水类型与说明（文档 5.8 积分过期策略） */
+    private static final String TYPE_EXPIRE = "EXPIRE";
+    private static final String DESC_EXPIRE = "积分过期清理";
 
     private final UserMapper userMapper;
     private final PointTransactionMapper pointTransactionMapper;
@@ -122,6 +127,49 @@ public class PointsServiceImpl implements PointsService {
         List<PointTransactionVO> voList = list.stream().map(PointTransactionVO::from).toList();
         return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
                 pageInfo.getTotal(), pageInfo.getPages(), voList);
+    }
+
+    @Override
+    @Transactional
+    public int expireExpiredPoints() {
+        // 已过期且未消费的获得批次，FOR UPDATE 行锁防与 FIFO 消费并发（同一事务内）
+        List<PointTransaction> batches = pointTransactionMapper.selectExpiredBatches();
+        if (batches.isEmpty()) {
+            return 0;
+        }
+        // 按用户汇总应扣减额（同一用户所有过期批次剩余之和）
+        Map<Long, Integer> totalByUser = new HashMap<>();
+        for (PointTransaction batch : batches) {
+            totalByUser.merge(batch.getUserId(), batch.getRemainAmount(), Integer::sum);
+        }
+        int expiredCount = 0;
+        for (Map.Entry<Long, Integer> entry : totalByUser.entrySet()) {
+            Long userId = entry.getKey();
+            // 原子扣减用户余额（points >= amount 才成功；正常恒成立，异常数据本轮跳过下次再清）
+            if (userMapper.deductPoints(userId, entry.getValue()) == 0) {
+                continue;
+            }
+            // DML 后同事务内重新读用户积分作为 balance_after（一级缓存已失效）
+            int balance = userMapper.selectById(userId).getPoints();
+            for (PointTransaction batch : batches) {
+                if (!batch.getUserId().equals(userId)) {
+                    continue;
+                }
+                pointTransactionMapper.clearRemain(batch.getId());
+                PointTransaction tx = new PointTransaction();
+                tx.setUserId(userId);
+                tx.setType(TYPE_EXPIRE);
+                tx.setChangeAmount(-batch.getRemainAmount());
+                tx.setBalanceAfter(balance);
+                tx.setRemainAmount(0);
+                tx.setBatchTxId(batch.getId());
+                tx.setDescription(DESC_EXPIRE);
+                pointTransactionMapper.insert(tx);
+                balance -= batch.getRemainAmount();
+                expiredCount++;
+            }
+        }
+        return expiredCount;
     }
 
     /** 读 sys_config，缺失时用默认值 */

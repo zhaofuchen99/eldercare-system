@@ -20,6 +20,12 @@ public interface PointTransactionMapper {
     /** 会员端：我的积分流水分页（按时间倒序，文档 5.8 积分明细） */
     List<PointTransaction> selectPageByUserId(@Param("userId") Long userId);
 
+    /** 已过期且未消费的获得批次（remain_amount > 0 且 expire_time < NOW()），FOR UPDATE 锁定（每日过期清理任务） */
+    List<PointTransaction> selectExpiredBatches();
+
+    /** 清理过期批次剩余积分（remain_amount 置 0） */
+    int clearRemain(@Param("id") Long id);
+
     /** 预约消费流水（取消退还时还原批次用） */
     List<PointTransaction> selectConsumeByRef(@Param("refId") Long refId);
 

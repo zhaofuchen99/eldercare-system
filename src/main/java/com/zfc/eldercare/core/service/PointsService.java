@@ -33,4 +33,11 @@ public interface PointsService {
 
     /** 积分明细分页（会员端，按时间倒序：获得/消费/过期等流水） */
     PageVO<PointTransactionVO> pointPage(Long userId, int page, int size);
+
+    /**
+     * 过期积分清理（每日定时任务，文档 5.8 / 5.12）：扫描已过期且未消费的获得批次，
+     * 按用户原子扣减 user.points，逐批次 remain_amount 置 0 并生成 EXPIRE 过期流水。
+     * 返回清理的批次总数。
+     */
+    int expireExpiredPoints();
 }
