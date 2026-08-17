@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 积分服务实现（文档 5.8 / 6.3.18）。
@@ -27,6 +28,9 @@ public class PointsServiceImpl implements PointsService {
     private static final String KEY_ASSESSMENT_BONUS = "health_assessment_bonus_points";
     /** 默认评测赠送积分（配置缺失时兜底） */
     private static final int DEFAULT_ASSESSMENT_BONUS = 20;
+    /** 体检预约消费流水类型与说明 */
+    private static final String TYPE_APPOINTMENT_CONSUME = "APPOINTMENT_CONSUME";
+    private static final String DESC_APPOINTMENT_CONSUME = "体检预约扣除积分";
 
     private final UserMapper userMapper;
     private final PointTransactionMapper pointTransactionMapper;
@@ -44,6 +48,55 @@ public class PointsServiceImpl implements PointsService {
     public void assessmentBonus(Long userId) {
         grant(userId, readConfig(KEY_ASSESSMENT_BONUS, DEFAULT_ASSESSMENT_BONUS),
                 "ASSESSMENT_COMPLETE", "完成健康评测赠送积分");
+    }
+
+    @Override
+    @Transactional
+    public void consumeAppointment(Long userId, Long refId, int amount) {
+        if (amount <= 0) {
+            return;
+        }
+        // 取可用获得批次（FIFO：未过期、剩余>0），行锁防并发双扣
+        List<PointTransaction> batches = pointTransactionMapper.selectConsumableBatches(userId);
+        int remaining = amount;
+        int balance = userMapper.selectById(userId).getPoints();
+        for (PointTransaction batch : batches) {
+            if (remaining <= 0) {
+                break;
+            }
+            int use = Math.min(remaining, batch.getRemainAmount());
+            pointTransactionMapper.decreaseRemain(batch.getId(), use);
+            PointTransaction tx = new PointTransaction();
+            tx.setUserId(userId);
+            tx.setType(TYPE_APPOINTMENT_CONSUME);
+            tx.setChangeAmount(-use);
+            tx.setBalanceAfter(balance);
+            tx.setRemainAmount(0);
+            tx.setBatchTxId(batch.getId());
+            tx.setDescription(DESC_APPOINTMENT_CONSUME);
+            tx.setRefId(refId);
+            pointTransactionMapper.insert(tx);
+            balance -= use;
+            remaining -= use;
+        }
+    }
+
+    @Override
+    @Transactional
+    public int refundAppointment(Long userId, Long refId) {
+        List<PointTransaction> consumes = pointTransactionMapper.selectConsumeByRef(refId);
+        if (consumes.isEmpty()) {
+            return 0;
+        }
+        int total = 0;
+        for (PointTransaction consume : consumes) {
+            int refund = -consume.getChangeAmount();
+            pointTransactionMapper.increaseRemain(consume.getBatchTxId(), refund);
+            total += refund;
+        }
+        pointTransactionMapper.softDeleteByRef(refId);
+        userMapper.updatePoints(userId, total);
+        return total;
     }
 
     /** 读 sys_config，缺失时用默认值 */

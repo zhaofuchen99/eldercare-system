@@ -18,4 +18,10 @@ public interface SmsService {
      * @throws com.zfc.eldercare.core.exception.BusinessException 验证码错误或已过期
      */
     void verifyCode(String phone, String code);
+
+    /**
+     * 发送业务通知短信（预约成功/取消等，文档 5.5）。
+     * 开发期为日志模拟；接入真实短信后替换实现，业务代码无需改动。
+     */
+    void sendText(String phone, String content);
 }

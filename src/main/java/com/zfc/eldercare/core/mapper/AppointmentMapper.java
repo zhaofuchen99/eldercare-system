@@ -1,0 +1,37 @@
+package com.zfc.eldercare.core.mapper;
+
+import com.zfc.eldercare.core.entity.Appointment;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.time.LocalDate;
+import java.util.List;
+
+/**
+ * 预约表 Mapper（文档 6.3.10）。
+ */
+@Mapper
+public interface AppointmentMapper {
+
+    int insert(Appointment appointment);
+
+    Appointment selectById(@Param("id") Long id);
+
+    /** 我的预约分页（会员端），配合 PageHelper */
+    List<Appointment> selectPageByUserId(@Param("userId") Long userId);
+
+    /** 预约分页（管理端，可按状态/用户/套餐/时段日期过滤），配合 PageHelper */
+    List<Appointment> selectPage(@Param("status") String status,
+                                 @Param("userId") Long userId,
+                                 @Param("packageId") Long packageId,
+                                 @Param("appointDate") LocalDate appointDate);
+
+    int updateStatus(@Param("id") Long id, @Param("status") String status);
+
+    /** 上传体检报告并置为已完成 */
+    int uploadReport(@Param("id") Long id, @Param("reportUrl") String reportUrl,
+                     @Param("originalFilename") String originalFilename, @Param("uploadAdminId") Long uploadAdminId);
+
+    /** 取消预约（仅状态更新；积分/名额退还在服务层处理） */
+    int cancelById(@Param("id") Long id);
+}

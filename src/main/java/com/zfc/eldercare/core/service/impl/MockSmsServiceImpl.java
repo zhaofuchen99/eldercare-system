@@ -48,6 +48,12 @@ public class MockSmsServiceImpl implements SmsService {
     }
 
     @Override
+    public void sendText(String phone, String content) {
+        // 开发期模拟：通知内容打印到日志。接入阿里云短信后改为真实发送。
+        log.info("【模拟短信】向 {} 发送通知：{}", phone, content);
+    }
+
+    @Override
     public void verifyCode(String phone, String code) {
         SmsCode record = smsCodeMapper.selectLatestUnused(phone);
         if (record == null || !record.getCode().equals(code)) {

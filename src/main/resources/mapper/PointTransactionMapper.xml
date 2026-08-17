@@ -2,11 +2,52 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zfc.eldercare.core.mapper.PointTransactionMapper">
 
+    <sql id="Base_Column_List">
+        id, user_id, type, change_amount, balance_after, remain_amount, expire_time,
+        batch_tx_id, description, ref_id, create_time, update_time, deleted
+    </sql>
+
     <insert id="insert" parameterType="com.zfc.eldercare.core.entity.PointTransaction" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO point_transaction (user_id, type, change_amount, balance_after, remain_amount,
                                        expire_time, batch_tx_id, description, ref_id)
         VALUES (#{userId}, #{type}, #{changeAmount}, #{balanceAfter}, #{remainAmount},
                 #{expireTime}, #{batchTxId}, #{description}, #{refId})
     </insert>
+
+    <!-- FIFO 可用批次：未过期、剩余 > 0，按过期时间升序；FOR UPDATE 锁定行防并发双扣 -->
+    <select id="selectConsumableBatches" resultType="com.zfc.eldercare.core.entity.PointTransaction">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM point_transaction
+        WHERE user_id = #{userId} AND deleted = 0 AND remain_amount &gt; 0 AND expire_time &gt; NOW()
+        ORDER BY expire_time, id
+        FOR UPDATE
+    </select>
+
+    <select id="selectConsumeByRef" resultType="com.zfc.eldercare.core.entity.PointTransaction">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM point_transaction
+        WHERE ref_id = #{refId} AND type = 'APPOINTMENT_CONSUME' AND deleted = 0
+        ORDER BY id
+    </select>
+
+    <update id="decreaseRemain">
+        UPDATE point_transaction
+        SET remain_amount = remain_amount - #{delta}
+        WHERE id = #{id} AND remain_amount &gt;= #{delta}
+    </update>
+
+    <update id="increaseRemain">
+        UPDATE point_transaction
+        SET remain_amount = remain_amount + #{delta}
+        WHERE id = #{id}
+    </update>
+
+    <update id="softDeleteByRef">
+        UPDATE point_transaction
+        SET deleted = 1
+        WHERE ref_id = #{refId} AND type = 'APPOINTMENT_CONSUME' AND deleted = 0
+    </update>
 
 </mapper>

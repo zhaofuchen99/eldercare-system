@@ -58,3 +58,9 @@ jwt:
   secret: ${JWT_SECRET:eldercare-dev-jwt-secret-please-change-in-production-2026}
   access-token-expire: 7200      # Access Token 有效期（秒）：2 小时
   refresh-token-expire: 604800   # Refresh Token 有效期（秒）：7 天
+
+# ===== 文件存储（体检报告等，文档 5.5）=====
+eldercare:
+  upload-dir: ${UPLOAD_DIR:data/upload}
+  # 报告下载链接签名密钥（5 分钟有效，防止盗链）；生产用环境变量注入
+  report-download-secret: ${REPORT_DOWNLOAD_SECRET:eldercare-report-download-secret-2026}

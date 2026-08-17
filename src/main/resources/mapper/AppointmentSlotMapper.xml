@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.AppointmentSlotMapper">
+
+    <sql id="Base_Column_List">
+        id, package_id, appoint_date, time_range, max_count, current_count, status,
+        create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.AppointmentSlot" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO appointment_slot (package_id, appoint_date, time_range, max_count, current_count, status)
+        VALUES (#{packageId}, #{appointDate}, #{timeRange}, #{maxCount}, #{currentCount}, #{status})
+    </insert>
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO appointment_slot (package_id, appoint_date, time_range, max_count, current_count, status)
+        VALUES
+        <foreach collection="list" item="slot" separator=",">
+            (#{slot.packageId}, #{slot.appointDate}, #{slot.timeRange}, #{slot.maxCount}, #{slot.currentCount}, #{slot.status})
+        </foreach>
+    </insert>
+
+    <select id="selectById" resultType="com.zfc.eldercare.core.entity.AppointmentSlot">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM appointment_slot
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectByIds" resultType="com.zfc.eldercare.core.entity.AppointmentSlot">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM appointment_slot
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="selectByPackage" resultType="com.zfc.eldercare.core.entity.AppointmentSlot">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM appointment_slot
+        WHERE deleted = 0
+        <if test="packageId != null">AND package_id = #{packageId}</if>
+        <if test="date != null">AND appoint_date = #{date}</if>
+        ORDER BY appoint_date ASC, time_range ASC, id ASC
+    </select>
+
+    <select id="selectAvailable" resultType="com.zfc.eldercare.core.entity.AppointmentSlot">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM appointment_slot
+        WHERE deleted = 0 AND status = 'AVAILABLE' AND appoint_date &gt;= CURDATE()
+        <if test="packageId != null">AND package_id = #{packageId}</if>
+        <if test="date != null">AND appoint_date = #{date}</if>
+        ORDER BY appoint_date ASC, time_range ASC, id ASC
+    </select>
+
+    <!-- 原子增加预约人数：仅 current_count < max_count 时成功，满员自动置为 FULL（文档 9.3 并发控制） -->
+    <update id="incrementCount">
+        UPDATE appointment_slot
+        SET current_count = current_count + 1,
+            status = IF(current_count + 1 &gt;= max_count, 'FULL', status)
+        WHERE id = #{id} AND deleted = 0 AND current_count &lt; max_count
+    </update>
+
+    <!-- 原子减少预约人数：取消退还，FULL 未满则回退为 AVAILABLE -->
+    <update id="decrementCount">
+        UPDATE appointment_slot
+        SET current_count = current_count - 1,
+            status = IF(current_count - 1 &lt; max_count AND status = 'FULL', 'AVAILABLE', status)
+        WHERE id = #{id} AND deleted = 0 AND current_count &gt; 0
+    </update>
+
+    <update id="updateStatus">
+        UPDATE appointment_slot
+        SET status = #{status}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="delete">
+        UPDATE appointment_slot
+        SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>

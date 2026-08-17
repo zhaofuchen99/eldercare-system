@@ -21,6 +21,16 @@
         WHERE id = #{id} AND deleted = 0
     </select>
 
+    <select id="selectByIds" resultType="com.zfc.eldercare.core.entity.User">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `user`
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
     <insert id="insert" parameterType="com.zfc.eldercare.core.entity.User" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO `user` (phone, password, real_name, gender, birth_date, height, avatar,
                             emergency_contact, member_level, points, status, role)
@@ -38,6 +48,12 @@
         UPDATE `user`
         SET points = points + #{delta}
         WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="deductPoints">
+        UPDATE `user`
+        SET points = points - #{amount}
+        WHERE id = #{id} AND points &gt;= #{amount} AND deleted = 0
     </update>
 
 </mapper>

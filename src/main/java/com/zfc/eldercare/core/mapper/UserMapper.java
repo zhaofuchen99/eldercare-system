@@ -16,6 +16,9 @@ public interface UserMapper {
     /** 按 ID 查用户（未删除） */
     User selectById(@Param("id") Long id);
 
+    /** 批量查询（管理端列表 VO 组装用） */
+    java.util.List<User> selectByIds(@Param("ids") java.util.List<Long> ids);
+
     /** 新增用户，回填自增主键 */
     int insert(User user);
 
@@ -24,4 +27,7 @@ public interface UserMapper {
 
     /** 原子增减积分（文档 9.3）：UPDATE user SET points = points + ? WHERE id = ? */
     int updatePoints(@Param("id") Long id, @Param("delta") int delta);
+
+    /** 原子扣减积分（消费）：points >= amount 才成功，返回受影响行数（0=积分不足） */
+    int deductPoints(@Param("id") Long id, @Param("amount") int amount);
 }

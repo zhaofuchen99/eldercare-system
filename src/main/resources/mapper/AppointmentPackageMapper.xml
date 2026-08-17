@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.AppointmentPackageMapper">
+
+    <sql id="Base_Column_List">
+        id, name, cover_url, description, price, suitable_people, items, status,
+        create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.AppointmentPackage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO appointment_package (name, cover_url, description, price, suitable_people, items, status)
+        VALUES (#{name}, #{coverUrl}, #{description}, #{price}, #{suitablePeople}, #{items}, #{status})
+    </insert>
+
+    <select id="selectById" resultType="com.zfc.eldercare.core.entity.AppointmentPackage">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM appointment_package
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectByIds" resultType="com.zfc.eldercare.core.entity.AppointmentPackage">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM appointment_package
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="selectPage" resultType="com.zfc.eldercare.core.entity.AppointmentPackage">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM appointment_package
+        WHERE deleted = 0
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <select id="selectEnabled" resultType="com.zfc.eldercare.core.entity.AppointmentPackage">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM appointment_package
+        WHERE status = 'ENABLED' AND deleted = 0
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <update id="update" parameterType="com.zfc.eldercare.core.entity.AppointmentPackage">
+        UPDATE appointment_package
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="coverUrl != null">cover_url = #{coverUrl},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="suitablePeople != null">suitable_people = #{suitablePeople},</if>
+            <if test="items != null">items = #{items},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="delete">
+        UPDATE appointment_package
+        SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.AppointmentMapper">
+
+    <sql id="Base_Column_List">
+        id, user_id, slot_id, package_id, status, report_url, original_filename,
+        report_upload_time, upload_admin_id, create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.Appointment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO appointment (user_id, slot_id, package_id, status)
+        VALUES (#{userId}, #{slotId}, #{packageId}, #{status})
+    </insert>
+
+    <select id="selectById" resultType="com.zfc.eldercare.core.entity.Appointment">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM appointment
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectPageByUserId" resultType="com.zfc.eldercare.core.entity.Appointment">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM appointment
+        WHERE user_id = #{userId} AND deleted = 0
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <select id="selectPage" resultType="com.zfc.eldercare.core.entity.Appointment">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM appointment a
+        WHERE a.deleted = 0
+        <if test="status != null and status != ''">AND a.status = #{status}</if>
+        <if test="userId != null">AND a.user_id = #{userId}</if>
+        <if test="packageId != null">AND a.package_id = #{packageId}</if>
+        <if test="appointDate != null">
+            AND EXISTS (SELECT 1 FROM appointment_slot s WHERE s.id = a.slot_id AND s.appoint_date = #{appointDate})
+        </if>
+        ORDER BY a.create_time DESC, a.id DESC
+    </select>
+
+    <update id="updateStatus">
+        UPDATE appointment
+        SET status = #{status}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <!-- 上传报告并自动置为已完成（文档 5.5 状态流转） -->
+    <update id="uploadReport">
+        UPDATE appointment
+        SET status = 'COMPLETED', report_url = #{reportUrl}, original_filename = #{originalFilename},
+            report_upload_time = NOW(), upload_admin_id = #{uploadAdminId}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="cancelById">
+        UPDATE appointment
+        SET status = 'CANCELED'
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>
