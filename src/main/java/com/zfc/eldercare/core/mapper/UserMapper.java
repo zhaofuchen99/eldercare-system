@@ -47,4 +47,7 @@ public interface UserMapper {
 
     /** 更新会员等级 */
     int updateMemberLevel(@Param("id") Long id, @Param("memberLevel") String memberLevel);
+
+    /** 更新个人信息（仅更新非 null 字段，会员中心） */
+    int updateProfile(User user);
 }
