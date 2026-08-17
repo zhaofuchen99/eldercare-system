@@ -28,6 +28,16 @@ spring:
       database: 0
       timeout: 3000ms
 
+  # ===== AI（DeepSeek，OpenAI 兼容接口）=====
+  # 说明：spring-ai 依赖在写 AI 模块时再加入；此处仅为配置占位，未加依赖前不生效
+  ai:
+    openai:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: https://api.deepseek.com
+      chat:
+        options:
+          model: deepseek-chat
+
 # ===== MyBatis =====
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml
@@ -43,3 +53,10 @@ pagehelper:
   reasonable: true
   support-methods-arguments: true
   params: count=countSql
+
+# ===== JWT =====
+jwt:
+  # 生产环境必须通过环境变量 JWT_SECRET 注入，切勿使用默认值
+  secret: ${JWT_SECRET:eldercare-dev-jwt-secret-please-change-in-production-2026}
+  access-token-expire: 7200      # Access Token 有效期（秒）：2 小时
+  refresh-token-expire: 604800   # Refresh Token 有效期（秒）：7 天

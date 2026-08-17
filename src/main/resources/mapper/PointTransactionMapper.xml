@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.PointTransactionMapper">
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.PointTransaction" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO point_transaction (user_id, type, change_amount, balance_after, remain_amount,
+                                       expire_time, batch_tx_id, description, ref_id)
+        VALUES (#{userId}, #{type}, #{changeAmount}, #{balanceAfter}, #{remainAmount},
+                #{expireTime}, #{batchTxId}, #{description}, #{refId})
+    </insert>
+
+</mapper>

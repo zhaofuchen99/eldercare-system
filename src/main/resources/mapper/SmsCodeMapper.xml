@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.SmsCodeMapper">
+
+    <sql id="Base_Column_List">
+        id, phone, code, expire_time, used, create_time
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.SmsCode" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sms_code (phone, code, expire_time, used)
+        VALUES (#{phone}, #{code}, #{expireTime}, #{used})
+    </insert>
+
+    <select id="selectLatestUnused" resultType="com.zfc.eldercare.core.entity.SmsCode">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sms_code
+        WHERE phone = #{phone} AND used = 0 AND expire_time &gt; NOW()
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+    <update id="markUsed">
+        UPDATE sms_code SET used = 1 WHERE id = #{id}
+    </update>
+
+</mapper>

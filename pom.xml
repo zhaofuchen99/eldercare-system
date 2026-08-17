@@ -43,6 +43,40 @@
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
 
+        <!-- 认证授权：JWT（jjwt 0.13.0）。
+             序列化器用 gson 而非 jjwt-jackson：项目为 Spring Boot 4（Jackson 3 / tools.jackson），
+             jjwt-jackson 依赖 Jackson 2（com.fasterxml）会产生双 Jackson 冲突。 -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.13.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.13.0</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-gson</artifactId>
+            <version>0.13.0</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- 认证授权：Spring Security（版本 7.1.0 由 Spring Boot BOM 管理） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- 工具类：Apache Commons Lang3 -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.20.0</version>
+        </dependency>
+
         <!-- ORM：MyBatis（非 MyBatis-Plus），版本与 Spring Boot 4.1.0 对应 -->
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>

@@ -1,0 +1,27 @@
+package com.zfc.eldercare.core.mapper;
+
+import com.zfc.eldercare.core.entity.User;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+/**
+ * 用户表 Mapper。
+ */
+@Mapper
+public interface UserMapper {
+
+    /** 按手机号查用户（未删除） */
+    User selectByPhone(@Param("phone") String phone);
+
+    /** 按 ID 查用户（未删除） */
+    User selectById(@Param("id") Long id);
+
+    /** 新增用户，回填自增主键 */
+    int insert(User user);
+
+    /** 更新密码 */
+    int updatePassword(@Param("id") Long id, @Param("password") String password);
+
+    /** 原子增减积分（文档 9.3）：UPDATE user SET points = points + ? WHERE id = ? */
+    int updatePoints(@Param("id") Long id, @Param("delta") int delta);
+}

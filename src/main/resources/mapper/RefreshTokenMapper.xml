@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.RefreshTokenMapper">
+
+    <sql id="Base_Column_List">
+         id, user_id, token, expire_time, create_time
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.RefreshToken" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO refresh_token (user_id, token, expire_time)
+        VALUES (#{userId}, #{token}, #{expireTime})
+    </insert>
+
+    <select id="selectByToken" resultType="com.zfc.eldercare.core.entity.RefreshToken">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM refresh_token
+        WHERE token = #{token}
+    </select>
+
+    <!-- 物理删除策略（详细设计文档 6.3.2） -->
+    <delete id="deleteByUserId">
+        DELETE FROM refresh_token WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteByToken">
+        DELETE FROM refresh_token WHERE token = #{token}
+    </delete>
+
+</mapper>
