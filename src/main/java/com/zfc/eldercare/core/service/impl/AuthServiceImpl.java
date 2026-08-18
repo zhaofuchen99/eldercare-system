@@ -12,7 +12,9 @@ import com.zfc.eldercare.core.enums.Role;
 import com.zfc.eldercare.core.enums.UserStatus;
 import com.zfc.eldercare.core.exception.BusinessException;
 import com.zfc.eldercare.core.mapper.RefreshTokenMapper;
+import com.zfc.eldercare.core.mapper.RoleMapper;
 import com.zfc.eldercare.core.mapper.UserMapper;
+import com.zfc.eldercare.core.mapper.UserRoleMapper;
 import com.zfc.eldercare.core.service.AuthService;
 import com.zfc.eldercare.core.service.PointsService;
 import com.zfc.eldercare.core.service.SmsService;
@@ -37,6 +39,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserMapper userMapper;
     private final RefreshTokenMapper refreshTokenMapper;
+    private final RoleMapper roleMapper;
+    private final UserRoleMapper userRoleMapper;
     private final SmsService smsService;
     private final PointsService pointsService;
     private final PasswordEncoder passwordEncoder;
@@ -66,6 +70,12 @@ public class AuthServiceImpl implements AuthService {
         user.setStatus(UserStatus.ENABLED.name());
         user.setRole(Role.MEMBER.name());
         userMapper.insert(user);
+        // 3.5 RBAC：建立 user_role 关联（user.role 冗余字段与关联表保持一致，文档 5.1）
+        Long memberRoleId = roleMapper.selectIdByCode(Role.MEMBER.name());
+        if (memberRoleId == null) {
+            throw new BusinessException(500, "内置会员角色未初始化，请联系管理员");
+        }
+        userRoleMapper.insert(user.getId(), memberRoleId);
         // 4. 赠送初始积分（写流水）
         pointsService.registerBonus(user.getId());
         // 5. 签发 Token 返回

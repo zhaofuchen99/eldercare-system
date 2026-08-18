@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.RolePermissionMapper">
+
+    <insert id="insert">
+        INSERT IGNORE INTO role_permission (role_id, permission_id)
+        VALUES (#{roleId}, #{permissionId})
+    </insert>
+
+    <select id="selectPermissionIdsByRoleId" resultType="java.lang.Long">
+        SELECT permission_id
+        FROM role_permission
+        WHERE role_id = #{roleId}
+    </select>
+
+    <select id="selectPermissionIdsByRoleIds" resultType="java.lang.Long">
+        SELECT permission_id
+        FROM role_permission
+        WHERE role_id IN
+        <foreach collection="roleIds" item="roleId" open="(" separator="," close=")">
+            #{roleId}
+        </foreach>
+    </select>
+
+    <delete id="deleteByRoleId">
+        DELETE FROM role_permission WHERE role_id = #{roleId}
+    </delete>
+
+</mapper>

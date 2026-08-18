@@ -48,6 +48,9 @@ public interface UserMapper {
     /** 更新会员等级 */
     int updateMemberLevel(@Param("id") Long id, @Param("memberLevel") String memberLevel);
 
+    /** 更新角色冗余字段（RBAC 角色分配时与 user_role 关联表保持一致，文档 5.1） */
+    int updateRole(@Param("id") Long id, @Param("role") String role);
+
     /** 更新个人信息（仅更新非 null 字段，会员中心） */
     int updateProfile(User user);
 }

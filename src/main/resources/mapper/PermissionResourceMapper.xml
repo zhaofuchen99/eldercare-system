@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.PermissionResourceMapper">
+
+    <insert id="insert">
+        INSERT IGNORE INTO permission_resource (permission_id, resource_id)
+        VALUES (#{permissionId}, #{resourceId})
+    </insert>
+
+    <select id="selectResourceIdsByPermissionId" resultType="java.lang.Long">
+        SELECT resource_id
+        FROM permission_resource
+        WHERE permission_id = #{permissionId}
+    </select>
+
+    <select id="selectResourceIdsByPermissionIds" resultType="java.lang.Long">
+        SELECT resource_id
+        FROM permission_resource
+        WHERE permission_id IN
+        <foreach collection="permissionIds" item="permissionId" open="(" separator="," close=")">
+            #{permissionId}
+        </foreach>
+    </select>
+
+    <delete id="deleteByPermissionId">
+        DELETE FROM permission_resource WHERE permission_id = #{permissionId}
+    </delete>
+
+</mapper>

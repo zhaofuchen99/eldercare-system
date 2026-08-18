@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.UserRoleMapper">
+
+    <insert id="insert">
+        INSERT IGNORE INTO user_role (user_id, role_id)
+        VALUES (#{userId}, #{roleId})
+    </insert>
+
+    <select id="selectRoleIdsByUserId" resultType="java.lang.Long">
+        SELECT role_id
+        FROM user_role
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectUserIdsByRoleId" resultType="java.lang.Long">
+        SELECT user_id
+        FROM user_role
+        WHERE role_id = #{roleId}
+    </select>
+
+    <delete id="deleteByUserId">
+        DELETE FROM user_role WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteByRoleId">
+        DELETE FROM user_role WHERE role_id = #{roleId}
+    </delete>
+
+</mapper>

@@ -87,6 +87,12 @@
         WHERE id = #{id} AND deleted = 0
     </update>
 
+    <update id="updateRole">
+        UPDATE `user`
+        SET role = #{role}
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
     <!-- 更新个人信息（仅更新非 null 字段，会员中心，需求 4.1.8） -->
     <update id="updateProfile" parameterType="com.zfc.eldercare.core.entity.User">
         UPDATE `user`

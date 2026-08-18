@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.SysResourceMapper">
+
+    <sql id="Base_Column_List">
+        id, resource_code, resource_name, resource_type, path, parent_id, sort_order, create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.SysResource" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO resource (resource_code, resource_name, resource_type, path, parent_id, sort_order)
+        VALUES (#{resourceCode}, #{resourceName}, #{resourceType}, #{path}, #{parentId}, #{sortOrder})
+    </insert>
+
+    <select id="selectById" resultType="com.zfc.eldercare.core.entity.SysResource">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM resource
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectByIds" resultType="com.zfc.eldercare.core.entity.SysResource">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM resource
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="selectByCode" resultType="com.zfc.eldercare.core.entity.SysResource">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM resource
+        WHERE resource_code = #{resourceCode} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectPage" resultType="com.zfc.eldercare.core.entity.SysResource">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM resource
+        WHERE deleted = 0
+        <if test="type != null and type != ''">
+            AND resource_type = #{type}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (resource_code LIKE CONCAT('%', #{keyword}, '%') OR resource_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY resource_type, parent_id, sort_order, id
+    </select>
+
+    <select id="selectByType" resultType="com.zfc.eldercare.core.entity.SysResource">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM resource
+        WHERE resource_type = #{type} AND deleted = 0
+        ORDER BY parent_id, sort_order, id
+    </select>
+
+    <select id="selectAll" resultType="com.zfc.eldercare.core.entity.SysResource">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM resource
+        WHERE deleted = 0
+        ORDER BY resource_type, parent_id, sort_order, id
+    </select>
+
+    <update id="update" parameterType="com.zfc.eldercare.core.entity.SysResource">
+        UPDATE resource
+        <set>
+            <if test="resourceCode != null">resource_code = #{resourceCode},</if>
+            <if test="resourceName != null">resource_name = #{resourceName},</if>
+            <if test="resourceType != null">resource_type = #{resourceType},</if>
+            <if test="path != null">path = #{path},</if>
+            <if test="parentId != null">parent_id = #{parentId},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="delete">
+        UPDATE resource
+        SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>

@@ -526,3 +526,349 @@ INSERT INTO `appointment` (`id`, `user_id`, `slot_id`, `package_id`, `status`) V
 (1, 2, 1, 1, 'COMPLETED'),
 (2, 2, 2, 2, 'PENDING'),
 (3, 2, 3, 3, 'CANCELED');
+
+-- =====================================================================
+-- RBAC 权限/资源种子数据（文档 5.1 / 6.3.19~6.3.24 / 8.2）
+-- 覆盖现有 5.x 模块全部接口；幂等可重复执行：
+--   permission / role_permission / permission_resource 靠唯一键去重；
+--   resource 表无唯一键，整段仅当 resource 表为空时写入。
+-- 对全新库：随本脚本一并执行；对已有库：单独执行本段一次。
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- 1. 权限 permission（域:模块:操作），uk_permission_code 去重
+-- ---------------------------------------------------------------------
+INSERT INTO `permission` (`permission_code`, `permission_name`, `description`) VALUES
+-- 会员端：健康记录
+('member:health:add', '新增健康记录', '会员新增健康记录'),
+('member:health:list', '健康记录列表', '会员查看自己的健康记录'),
+('member:health:trend', '健康趋势查询', '会员查看健康指标趋势'),
+-- 会员端：健康评测
+('member:assessment:list', '问卷列表', '会员查看已发布问卷'),
+('member:assessment:view', '问卷详情', '会员查看问卷详情并答题'),
+('member:assessment:submit', '提交评测', '会员提交健康评测'),
+('member:assessment:history', '评测历史', '会员查看评测历史'),
+('member:assessment:detail', '评测报告', '会员查看评测报告'),
+-- 会员端：AI 对话
+('member:chat:create', '新建会话', '会员创建 AI 对话会话'),
+('member:chat:list', '会话列表', '会员查看会话列表'),
+('member:chat:delete', '删除会话', '会员删除会话'),
+('member:chat:history', '会话消息', '会员查看会话历史消息'),
+('member:chat:send', '发送消息', '会员发送消息（含流式对话）'),
+-- 会员端：体检预约
+('member:appointment:packages', '体检套餐列表', '会员查看体检套餐'),
+('member:appointment:slots', '套餐时段查询', '会员查看套餐可预约时段'),
+('member:appointment:create', '预约体检', '会员提交体检预约'),
+('member:appointment:cancel', '取消预约', '会员取消预约'),
+('member:appointment:list', '我的预约', '会员查看我的预约列表'),
+('member:appointment:report', '下载体检报告', '会员下载体检报告'),
+-- 会员端：社区活动
+('member:activity:list', '活动列表', '会员查看社区活动'),
+('member:activity:detail', '活动详情', '会员查看活动详情'),
+('member:activity:register', '报名活动', '会员报名社区活动'),
+('member:activity:mine', '我的报名', '会员查看我的报名'),
+('member:activity:checkin', '活动签到', '会员活动签到（获取积分）'),
+-- 会员端：消息通知
+('member:message:list', '消息列表', '会员查看消息'),
+('member:message:unread', '未读消息数', '会员查看未读消息数'),
+('member:message:read', '标记已读', '会员标记消息已读'),
+-- 会员端：积分 / 个人中心 / 权限
+('member:points:list', '积分明细', '会员查看积分明细'),
+('member:profile:view', '个人信息', '会员查看个人信息'),
+('member:profile:update', '更新个人信息', '会员更新个人信息'),
+('member:permissions:view', '我的权限/菜单', '会员获取自己的权限与菜单资源'),
+-- 管理端：健康记录
+('admin:health:list', '健康记录管理', '管理端查看会员健康记录'),
+('admin:health:trend', '健康趋势管理', '管理端查看会员健康趋势'),
+-- 管理端：评测 / 预约 / 活动 / 会员 / 消息 / 配置 / 仪表盘
+('admin:assessment:manage', '评测管理', '管理端问卷与题目管理'),
+('admin:appointment:manage', '体检管理', '管理端套餐/时段/预约管理'),
+('admin:appointment:report', '上传体检报告', '管理端上传体检报告'),
+('admin:activity:manage', '活动管理', '管理端活动管理'),
+('admin:activity:registrations', '报名管理', '管理端查看活动报名'),
+('admin:member:manage', '会员管理', '管理端会员启停/等级/积分/重置密码'),
+('admin:message:manage', '消息管理', '管理端消息列表/详情/删除'),
+('admin:message:push', '消息推送', '管理端推送消息'),
+('admin:config:manage', '系统配置', '管理端系统配置管理'),
+('admin:dashboard:view', '仪表盘', '管理端查看数据仪表盘'),
+-- 管理端：RBAC 授权管理
+('admin:role:manage', '角色管理', '管理端角色增删改查与授权分配'),
+('admin:permission:manage', '权限管理', '管理端权限增删改查与挂资源'),
+('admin:resource:manage', '资源管理', '管理端资源增删改查')
+ON DUPLICATE KEY UPDATE `permission_name` = `permission_name`;
+
+-- ---------------------------------------------------------------------
+-- 2. 资源 resource（API/MENU/BUTTON 三类）
+--    显式 ID 保证菜单树 parent_id 确定；仅当 resource 表为空时写入
+-- ---------------------------------------------------------------------
+INSERT INTO `resource` (`id`, `resource_code`, `resource_name`, `resource_type`, `path`, `parent_id`, `sort_order`)
+SELECT * FROM (
+-- API 接口资源（接口访问控制，Ant 路径模式）
+SELECT 1, 'api:member:health', '会员健康接口', 'API', '/api/member/health/**', 0, 1
+UNION ALL SELECT 2, 'api:member:assessment', '会员评测接口', 'API', '/api/member/assessment/**', 0, 2
+UNION ALL SELECT 3, 'api:member:chat', 'AI 对话接口', 'API', '/api/member/chat/**', 0, 3
+UNION ALL SELECT 4, 'api:member:appointment', '体检预约接口', 'API', '/api/member/appointment/**', 0, 4
+UNION ALL SELECT 5, 'api:member:activity', '社区活动接口', 'API', '/api/member/activity/**', 0, 5
+UNION ALL SELECT 6, 'api:member:message', '消息接口', 'API', '/api/member/message/**', 0, 6
+UNION ALL SELECT 7, 'api:member:points', '积分接口', 'API', '/api/member/points/**', 0, 7
+UNION ALL SELECT 8, 'api:member:profile', '个人中心接口', 'API', '/api/member/profile/**', 0, 8
+UNION ALL SELECT 9, 'api:member:permissions', '权限菜单接口', 'API', '/api/member/permissions', 0, 9
+UNION ALL SELECT 10, 'api:admin:health-record', '健康档案管理接口', 'API', '/api/admin/health-record/**', 0, 10
+UNION ALL SELECT 11, 'api:admin:assessment', '评测管理接口', 'API', '/api/admin/assessment/**', 0, 11
+UNION ALL SELECT 12, 'api:admin:appointment', '体检管理接口', 'API', '/api/admin/appointment/**', 0, 12
+UNION ALL SELECT 13, 'api:admin:activity', '活动管理接口', 'API', '/api/admin/activity/**', 0, 13
+UNION ALL SELECT 14, 'api:admin:members', '会员管理接口', 'API', '/api/admin/members/**', 0, 14
+UNION ALL SELECT 15, 'api:admin:message', '消息管理接口', 'API', '/api/admin/message/**', 0, 15
+UNION ALL SELECT 16, 'api:admin:config', '系统配置接口', 'API', '/api/admin/config/**', 0, 16
+UNION ALL SELECT 17, 'api:admin:dashboard', '仪表盘接口', 'API', '/api/admin/dashboard/**', 0, 17
+UNION ALL SELECT 18, 'api:admin:role', '角色管理接口', 'API', '/api/admin/role/**', 0, 18
+UNION ALL SELECT 19, 'api:admin:permission', '权限管理接口', 'API', '/api/admin/permission/**', 0, 19
+UNION ALL SELECT 20, 'api:admin:resource', '资源管理接口', 'API', '/api/admin/resource/**', 0, 20
+-- 会员端菜单
+UNION ALL SELECT 21, 'menu:member:home', '首页', 'MENU', NULL, 0, 1
+UNION ALL SELECT 22, 'menu:member:health', '健康档案', 'MENU', NULL, 0, 2
+UNION ALL SELECT 23, 'menu:member:assessment', '健康评测', 'MENU', NULL, 0, 3
+UNION ALL SELECT 24, 'menu:member:chat', 'AI 助手', 'MENU', NULL, 0, 4
+UNION ALL SELECT 25, 'menu:member:appointment', '体检预约', 'MENU', NULL, 0, 5
+UNION ALL SELECT 26, 'menu:member:activity', '社区活动', 'MENU', NULL, 0, 6
+UNION ALL SELECT 27, 'menu:member:message', '消息中心', 'MENU', NULL, 0, 7
+UNION ALL SELECT 28, 'menu:member:points', '我的积分', 'MENU', NULL, 0, 8
+UNION ALL SELECT 29, 'menu:member:profile', '个人中心', 'MENU', NULL, 0, 9
+-- 管理端菜单
+UNION ALL SELECT 30, 'menu:admin:dashboard', '工作台', 'MENU', NULL, 0, 1
+UNION ALL SELECT 31, 'menu:admin:health', '健康档案管理', 'MENU', NULL, 0, 2
+UNION ALL SELECT 32, 'menu:admin:assessment', '评测管理', 'MENU', NULL, 0, 3
+UNION ALL SELECT 33, 'menu:admin:appointment', '体检管理', 'MENU', NULL, 0, 4
+UNION ALL SELECT 34, 'menu:admin:activity', '活动管理', 'MENU', NULL, 0, 5
+UNION ALL SELECT 35, 'menu:admin:member', '会员管理', 'MENU', NULL, 0, 6
+UNION ALL SELECT 36, 'menu:admin:message', '消息管理', 'MENU', NULL, 0, 7
+UNION ALL SELECT 37, 'menu:admin:config', '系统配置', 'MENU', NULL, 0, 8
+UNION ALL SELECT 38, 'menu:admin:rbac', '权限管理', 'MENU', NULL, 0, 9
+UNION ALL SELECT 39, 'menu:admin:rbac:role', '角色管理', 'MENU', NULL, 38, 1
+UNION ALL SELECT 40, 'menu:admin:rbac:permission', '权限管理', 'MENU', NULL, 38, 2
+UNION ALL SELECT 41, 'menu:admin:rbac:resource', '资源管理', 'MENU', NULL, 38, 3
+-- 按钮资源（页面操作按钮显隐）
+UNION ALL SELECT 42, 'btn:activity:checkin', '活动签到', 'BUTTON', NULL, 0, 1
+UNION ALL SELECT 43, 'btn:appointment:cancel', '取消预约', 'BUTTON', NULL, 0, 2
+UNION ALL SELECT 44, 'btn:assessment:publish', '发布问卷', 'BUTTON', NULL, 0, 1
+UNION ALL SELECT 45, 'btn:assessment:manage', '问卷/题目管理', 'BUTTON', NULL, 0, 2
+UNION ALL SELECT 46, 'btn:appointment:manage', '套餐/时段管理', 'BUTTON', NULL, 0, 1
+UNION ALL SELECT 47, 'btn:appointment:report', '上传报告', 'BUTTON', NULL, 0, 2
+UNION ALL SELECT 48, 'btn:appointment:status', '预约状态处理', 'BUTTON', NULL, 0, 3
+UNION ALL SELECT 49, 'btn:activity:manage', '活动编辑/删除', 'BUTTON', NULL, 0, 1
+UNION ALL SELECT 50, 'btn:activity:registrations', '报名管理', 'BUTTON', NULL, 0, 2
+UNION ALL SELECT 51, 'btn:member:manage', '会员操作', 'BUTTON', NULL, 0, 1
+UNION ALL SELECT 52, 'btn:message:push', '消息推送', 'BUTTON', NULL, 0, 1
+UNION ALL SELECT 53, 'btn:message:delete', '消息删除', 'BUTTON', NULL, 0, 2
+UNION ALL SELECT 54, 'btn:config:manage', '配置编辑', 'BUTTON', NULL, 0, 1
+UNION ALL SELECT 55, 'btn:role:assign', '角色授权/分配用户', 'BUTTON', NULL, 0, 1
+UNION ALL SELECT 56, 'btn:permission:manage', '权限编辑', 'BUTTON', NULL, 0, 1
+UNION ALL SELECT 57, 'btn:resource:manage', '资源编辑', 'BUTTON', NULL, 0, 1
+) t
+WHERE NOT EXISTS (SELECT 1 FROM `resource` LIMIT 1);
+
+-- ---------------------------------------------------------------------
+-- 3. 角色→权限 关联 role_permission（uk_role_permission 去重）
+--    ADMIN 授全部权限；MEMBER 授会员端权限（满足需求文档「ADMIN 可访问所有接口」）
+-- ---------------------------------------------------------------------
+INSERT INTO `role_permission` (`role_id`, `permission_id`)
+SELECT r.`id`, p.`id`
+FROM `role` r
+CROSS JOIN `permission` p
+WHERE r.`role_code` = 'ADMIN'
+ON DUPLICATE KEY UPDATE `permission_id` = `permission_id`;
+
+INSERT INTO `role_permission` (`role_id`, `permission_id`)
+SELECT r.`id`, p.`id`
+FROM `role` r
+CROSS JOIN `permission` p ON p.`permission_code` LIKE 'member:%'
+WHERE r.`role_code` = 'MEMBER'
+ON DUPLICATE KEY UPDATE `permission_id` = `permission_id`;
+
+-- ---------------------------------------------------------------------
+-- 4. 权限→资源 关联 permission_resource（uk_permission_resource 去重）
+--    每个权限挂其对应模块的 API 资源 + 菜单资源 + 相关按钮资源
+-- ---------------------------------------------------------------------
+-- 会员端：健康记录
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:member:health', 'menu:member:health')
+WHERE p.`permission_code` IN ('member:health:add', 'member:health:list', 'member:health:trend')
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 会员端：健康评测
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:member:assessment', 'menu:member:assessment')
+WHERE p.`permission_code` IN ('member:assessment:list', 'member:assessment:view', 'member:assessment:submit', 'member:assessment:history', 'member:assessment:detail')
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 会员端：AI 对话
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:member:chat', 'menu:member:chat')
+WHERE p.`permission_code` IN ('member:chat:create', 'member:chat:list', 'member:chat:delete', 'member:chat:history', 'member:chat:send')
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 会员端：体检预约（含取消按钮）
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:member:appointment', 'menu:member:appointment', 'btn:appointment:cancel')
+WHERE p.`permission_code` IN ('member:appointment:packages', 'member:appointment:slots', 'member:appointment:create', 'member:appointment:cancel', 'member:appointment:list', 'member:appointment:report')
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 会员端：社区活动（含签到按钮）
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:member:activity', 'menu:member:activity', 'btn:activity:checkin')
+WHERE p.`permission_code` IN ('member:activity:list', 'member:activity:detail', 'member:activity:register', 'member:activity:mine', 'member:activity:checkin')
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 会员端：消息通知
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:member:message', 'menu:member:message')
+WHERE p.`permission_code` IN ('member:message:list', 'member:message:unread', 'member:message:read')
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 会员端：积分明细
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:member:points', 'menu:member:points')
+WHERE p.`permission_code` = 'member:points:list'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 会员端：个人中心
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:member:profile', 'menu:member:profile')
+WHERE p.`permission_code` IN ('member:profile:view', 'member:profile:update')
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 会员端：我的权限/菜单
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` = 'api:member:permissions'
+WHERE p.`permission_code` = 'member:permissions:view'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：健康记录
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:health-record', 'menu:admin:health')
+WHERE p.`permission_code` IN ('admin:health:list', 'admin:health:trend')
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：评测管理（含发布/编辑按钮）
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:assessment', 'menu:admin:assessment', 'btn:assessment:publish', 'btn:assessment:manage')
+WHERE p.`permission_code` = 'admin:assessment:manage'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：体检管理（含套餐/状态按钮）
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:appointment', 'menu:admin:appointment', 'btn:appointment:manage', 'btn:appointment:status')
+WHERE p.`permission_code` = 'admin:appointment:manage'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：上传体检报告
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:appointment', 'btn:appointment:report')
+WHERE p.`permission_code` = 'admin:appointment:report'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：活动管理（含编辑/报名管理按钮）
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:activity', 'menu:admin:activity', 'btn:activity:manage', 'btn:activity:registrations')
+WHERE p.`permission_code` = 'admin:activity:manage'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：报名管理
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:activity', 'btn:activity:registrations')
+WHERE p.`permission_code` = 'admin:activity:registrations'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：会员管理
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:members', 'menu:admin:member', 'btn:member:manage')
+WHERE p.`permission_code` = 'admin:member:manage'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：消息管理（列表/详情/删除）
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:message', 'menu:admin:message', 'btn:message:delete')
+WHERE p.`permission_code` = 'admin:message:manage'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：消息推送
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:message', 'btn:message:push')
+WHERE p.`permission_code` = 'admin:message:push'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：系统配置
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:config', 'menu:admin:config', 'btn:config:manage')
+WHERE p.`permission_code` = 'admin:config:manage'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：仪表盘
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:dashboard', 'menu:admin:dashboard')
+WHERE p.`permission_code` = 'admin:dashboard:view'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：角色管理（含 RBAC 菜单）
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:role', 'menu:admin:rbac', 'menu:admin:rbac:role', 'btn:role:assign')
+WHERE p.`permission_code` = 'admin:role:manage'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：权限管理
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:permission', 'menu:admin:rbac', 'menu:admin:rbac:permission', 'btn:permission:manage')
+WHERE p.`permission_code` = 'admin:permission:manage'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：资源管理
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:resource', 'menu:admin:rbac', 'menu:admin:rbac:resource', 'btn:resource:manage')
+WHERE p.`permission_code` = 'admin:resource:manage'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;

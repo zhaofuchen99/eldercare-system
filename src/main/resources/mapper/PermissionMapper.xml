@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.PermissionMapper">
+
+    <sql id="Base_Column_List">
+        id, permission_code, permission_name, description, create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.Permission" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO permission (permission_code, permission_name, description)
+        VALUES (#{permissionCode}, #{permissionName}, #{description})
+    </insert>
+
+    <select id="selectById" resultType="com.zfc.eldercare.core.entity.Permission">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM permission
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectByIds" resultType="com.zfc.eldercare.core.entity.Permission">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM permission
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="selectByCode" resultType="com.zfc.eldercare.core.entity.Permission">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM permission
+        WHERE permission_code = #{permissionCode} AND deleted = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectPage" resultType="com.zfc.eldercare.core.entity.Permission">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM permission
+        WHERE deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (permission_code LIKE CONCAT('%', #{keyword}, '%') OR permission_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY id
+    </select>
+
+    <select id="selectAll" resultType="com.zfc.eldercare.core.entity.Permission">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM permission
+        WHERE deleted = 0
+        ORDER BY id
+    </select>
+
+    <update id="update" parameterType="com.zfc.eldercare.core.entity.Permission">
+        UPDATE permission
+        <set>
+            <if test="permissionCode != null">permission_code = #{permissionCode},</if>
+            <if test="permissionName != null">permission_name = #{permissionName},</if>
+            <if test="description != null">description = #{description},</if>
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="delete">
+        UPDATE permission
+        SET deleted = 1
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>
