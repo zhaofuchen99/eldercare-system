@@ -664,8 +664,8 @@ UNION ALL SELECT 54, 'btn:config:manage', '配置编辑', 'BUTTON', NULL, 0, 1
 UNION ALL SELECT 55, 'btn:role:assign', '角色授权/分配用户', 'BUTTON', NULL, 0, 1
 UNION ALL SELECT 56, 'btn:permission:manage', '权限编辑', 'BUTTON', NULL, 0, 1
 UNION ALL SELECT 57, 'btn:resource:manage', '资源编辑', 'BUTTON', NULL, 0, 1
-) t
-WHERE NOT EXISTS (SELECT 1 FROM `resource` LIMIT 1);
+) t(id, resource_code, resource_name, resource_type, path, parent_id, sort_order)
+WHERE NOT EXISTS (SELECT 1 FROM `resource`);
 
 -- ---------------------------------------------------------------------
 -- 3. 角色→权限 关联 role_permission（uk_role_permission 去重）

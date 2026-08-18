@@ -4,6 +4,7 @@ import com.zfc.eldercare.core.filter.JwtAuthenticationFilter;
 import com.zfc.eldercare.core.security.RestAccessDeniedHandler;
 import com.zfc.eldercare.core.security.RestAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -50,6 +51,19 @@ public class SecurityConfig {
                 .httpBasic(h -> h.disable())
                 .formLogin(f -> f.disable());
         return http.build();
+    }
+
+    /**
+     * 禁用 JwtAuthenticationFilter 的全局 servlet 自动注册（文档 8.2）。
+     * 过滤器是 @Component 会被 Spring Boot 注册到全局过滤器链，运行在 Security 链之前，
+     * 其写入的 SecurityContext 会被链内 SecurityContextHolderFilter 的 deferred context 覆盖导致 401。
+     * 这里只让它通过上方 addFilterBefore 在 Security 链内部运行（位于 SecurityContextHolderFilter 之后）。
+     */
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegistration(JwtAuthenticationFilter filter) {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     /** 密码编码器：BCrypt（文档 5.1 密码安全） */
