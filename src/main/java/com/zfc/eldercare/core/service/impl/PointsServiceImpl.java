@@ -42,6 +42,9 @@ public class PointsServiceImpl implements PointsService {
     /** 体检预约消费流水类型与说明 */
     private static final String TYPE_APPOINTMENT_CONSUME = "APPOINTMENT_CONSUME";
     private static final String DESC_APPOINTMENT_CONSUME = "体检预约扣除积分";
+    /** 体检预约取消退款流水类型与说明（仅展示，remain_amount=0 不参与 FIFO 消费/过期清理） */
+    private static final String TYPE_APPOINTMENT_REFUND = "APPOINTMENT_REFUND";
+    private static final String DESC_APPOINTMENT_REFUND = "体检预约取消退还积分";
     /** 过期清理流水类型与说明（文档 5.8 积分过期策略） */
     private static final String TYPE_EXPIRE = "EXPIRE";
     private static final String DESC_EXPIRE = "积分过期清理";
@@ -94,8 +97,18 @@ public class PointsServiceImpl implements PointsService {
             pointTransactionMapper.increaseRemain(consume.getBatchTxId(), refund);
             total += refund;
         }
-        pointTransactionMapper.softDeleteByRef(refId);
+        // 不再软删原消费流水：保留「APPOINTMENT_CONSUME -X」历史记录，配合下面的退款流水「+X」形成完整闭环
         userMapper.updatePoints(userId, total);
+        // 补一条「预约退款」展示流水：remain_amount=0 不参与 FIFO 消费/过期清理，避免与批次加回重复计余额
+        PointTransaction refundTx = new PointTransaction();
+        refundTx.setUserId(userId);
+        refundTx.setType(TYPE_APPOINTMENT_REFUND);
+        refundTx.setChangeAmount(total);
+        refundTx.setBalanceAfter(userMapper.selectById(userId).getPoints());
+        refundTx.setRemainAmount(0);
+        refundTx.setDescription(DESC_APPOINTMENT_REFUND);
+        refundTx.setRefId(refId);
+        pointTransactionMapper.insert(refundTx);
         return total;
     }
 

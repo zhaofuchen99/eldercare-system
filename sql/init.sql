@@ -352,7 +352,7 @@ CREATE TABLE IF NOT EXISTS `point_transaction`
 (
     `id`            BIGINT       NOT NULL AUTO_INCREMENT COMMENT '流水 ID',
     `user_id`       BIGINT       NOT NULL                COMMENT '用户 ID',
-    `type`          VARCHAR(30)  NOT NULL                COMMENT '类型：REGISTER_BONUS注册赠送/ACTIVITY_CHECKIN活动签到/ASSESSMENT_COMPLETE评测完成/ADMIN_ADJUST管理员调整/APPOINTMENT_CONSUME体检预约消费/EXPIRE积分过期',
+    `type`          VARCHAR(30)  NOT NULL                COMMENT '类型：REGISTER_BONUS注册赠送/ACTIVITY_CHECKIN活动签到/ASSESSMENT_COMPLETE评测完成/ADMIN_ADJUST管理员调整/APPOINTMENT_CONSUME体检预约消费/APPOINTMENT_REFUND预约取消退款(展示流水)/EXPIRE积分过期',
     `change_amount` INT          NOT NULL                COMMENT '变动积分（正=获得，负=扣减）',
     `balance_after` INT          NOT NULL                COMMENT '变动后积分余额',
     `remain_amount` INT          NOT NULL DEFAULT 0      COMMENT '获得类流水的剩余可用积分，消费按 FIFO 扣减；消耗类流水为 0',
@@ -362,7 +362,7 @@ CREATE TABLE IF NOT EXISTS `point_transaction`
     `ref_id`        BIGINT       NULL                    COMMENT '关联业务记录 ID（预约 ID、报名 ID、评测 ID 等）',
     `create_time`   DATETIME     NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time`   DATETIME     NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `deleted`       TINYINT      NULL DEFAULT 0          COMMENT '逻辑删除（取消退还时消费流水标记 deleted=1）',
+    `deleted`       TINYINT      NULL DEFAULT 0          COMMENT '逻辑删除（预约取消退款保留原消费流水，不再标记软删）',
     PRIMARY KEY (`id`),
     KEY `idx_user_id` (`user_id`),
     KEY `idx_expire_remain` (`expire_time`, `remain_amount`)
