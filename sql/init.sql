@@ -2,9 +2,9 @@
 -- AI 智能养老社区管理系统 - 数据库初始化脚本
 -- 数据库：eldercare
 -- 引擎：InnoDB    字符集：utf8mb4    排序规则：utf8mb4_0900_ai_ci
--- 依据：详细设计文档 v1.0.8（24 张表）
+-- 依据：详细设计文档 v1.0.8（26 张表：24 张业务 + 知识库 2 张新增）
 -- 枚举值约定：数据库存储英文编码，前端展示层映射中文
--- 说明：在全新数据库上执行一次即可（建库 + 24 张表 + 初始数据）
+-- 说明：在全新数据库上执行一次即可（建库 + 26 张表 + 初始数据）
 -- 使用：Navicat / IDEA Database 中「运行 SQL 文件」执行本脚本
 -- =====================================================================
 
@@ -464,6 +464,46 @@ CREATE TABLE IF NOT EXISTS `permission_resource`
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '权限资源关联表';
 
 -- =====================================================================
+-- 25. 知识库文档表 knowledge_doc
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS `knowledge_doc`
+(
+    `id`           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '文档 ID',
+    `title`        VARCHAR(255) NOT NULL                COMMENT '文档标题（默认取原始文件名）',
+    `file_name`    VARCHAR(255) NOT NULL                COMMENT '原始文件名',
+    `file_path`    VARCHAR(500) NULL                    COMMENT '存储相对路径 knowledge/yyyyMM/{uuid}.ext（重新解析用）',
+    `file_type`    VARCHAR(20)  NOT NULL                COMMENT '文件类型：TXT/MD/PDF/DOCX（当前支持 TXT/MD）',
+    `file_size`    BIGINT       NULL                    COMMENT '文件大小（字节）',
+    `chunk_count`  INT          NOT NULL DEFAULT 0      COMMENT '切片数量',
+    `status`       VARCHAR(20)  NOT NULL DEFAULT 'PARSING' COMMENT '处理状态：PARSING解析中/READY可用/FAILED失败',
+    `create_by`    BIGINT       NULL                    COMMENT '上传管理员 ID',
+    `create_time`  DATETIME     NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time`  DATETIME     NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted`      TINYINT      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+    PRIMARY KEY (`id`),
+    KEY `idx_create_by` (`create_by`),
+    KEY `idx_status` (`status`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '知识库文档表';
+
+-- =====================================================================
+-- 26. 知识库切片表 knowledge_chunk
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS `knowledge_chunk`
+(
+    `id`           BIGINT      NOT NULL AUTO_INCREMENT COMMENT '切片 ID',
+    `doc_id`       BIGINT      NOT NULL                COMMENT '文档 ID（关联 knowledge_doc.id）',
+    `chunk_index`  INT         NOT NULL                COMMENT '切片序号（从 0 开始）',
+    `chunk_text`   MEDIUMTEXT  NOT NULL                COMMENT '切片文本（与 Redis 向量关联，检索时直接返回）',
+    `vector_id`    VARCHAR(64) NULL                    COMMENT 'Redis 向量 ID（vectorStore.add 生成，删除文档时回删）',
+    `token_count`  INT         NULL                    COMMENT '切片字符数',
+    `create_time`  DATETIME    NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `deleted`      TINYINT     NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+    PRIMARY KEY (`id`),
+    KEY `idx_doc_id` (`doc_id`),
+    KEY `idx_vector_id` (`vector_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '知识库切片表';
+
+-- =====================================================================
 -- 初始数据
 -- =====================================================================
 
@@ -475,7 +515,11 @@ INSERT INTO `sys_config` (`config_key`, `config_value`, `description`) VALUES
 ('health_assessment_bonus_points', '20', '完成健康评测赠送积分'),
 ('health_assessment_min_score', '60', '健康评测及格分数线'),
 ('access_token_expire_hours', '2', 'Access Token 有效期（小时）'),
-('refresh_token_expire_days', '7', 'Refresh Token 有效期（天）');
+('refresh_token_expire_days', '7', 'Refresh Token 有效期（天）'),
+('knowledge_enabled', 'true', '知识库 RAG 检索开关'),
+('knowledge_top_k', '3', '知识库检索返回切片数'),
+('knowledge_search_threshold', '0.6', '知识库检索命中相似度阈值（0-1）'),
+('ai_assessment_system_prompt', '你是一位资深的健康评测专家，请根据问卷答案与规则分，输出 JSON：{"aiScore":0-100整数,"suggestion":不超过200字建议}', 'AI 健康评测系统提示词');
 
 -- 默认用户
 -- 管理员：13800000000 / Admin@123456
@@ -594,14 +638,15 @@ INSERT INTO `permission` (`permission_code`, `permission_name`, `description`) V
 -- 管理端：RBAC 授权管理
 ('admin:role:manage', '角色管理', '管理端角色增删改查与授权分配'),
 ('admin:permission:manage', '权限管理', '管理端权限增删改查与挂资源'),
-('admin:resource:manage', '资源管理', '管理端资源增删改查')
+('admin:resource:manage', '资源管理', '管理端资源增删改查'),
+('admin:knowledge:manage', '知识库管理', '管理端知识库文档上传/删除/管理')
 ON DUPLICATE KEY UPDATE `permission_name` = `permission_name`;
 
 -- ---------------------------------------------------------------------
 -- 2. 资源 resource（API/MENU/BUTTON 三类）
---    显式 ID 保证菜单树 parent_id 确定；仅当 resource 表为空时写入
+--    显式 ID 保证菜单树 parent_id 确定；INSERT IGNORE 按主键幂等，已有库重跑可补新增资源
 -- ---------------------------------------------------------------------
-INSERT INTO `resource` (`id`, `resource_code`, `resource_name`, `resource_type`, `path`, `parent_id`, `sort_order`)
+INSERT IGNORE INTO `resource` (`id`, `resource_code`, `resource_name`, `resource_type`, `path`, `parent_id`, `sort_order`)
 SELECT * FROM (
 -- API 接口资源（接口访问控制，Ant 路径模式）
 SELECT 1, 'api:member:health', '会员健康接口', 'API', '/api/member/health/**', 0, 1
@@ -664,8 +709,13 @@ UNION ALL SELECT 54, 'btn:config:manage', '配置编辑', 'BUTTON', NULL, 0, 1
 UNION ALL SELECT 55, 'btn:role:assign', '角色授权/分配用户', 'BUTTON', NULL, 0, 1
 UNION ALL SELECT 56, 'btn:permission:manage', '权限编辑', 'BUTTON', NULL, 0, 1
 UNION ALL SELECT 57, 'btn:resource:manage', '资源编辑', 'BUTTON', NULL, 0, 1
-) t(id, resource_code, resource_name, resource_type, path, parent_id, sort_order)
-WHERE NOT EXISTS (SELECT 1 FROM `resource`);
+-- AI 知识库管理资源
+UNION ALL SELECT 58, 'api:admin:knowledge', '知识库管理接口', 'API', '/api/admin/knowledge/**', 0, 21
+UNION ALL SELECT 59, 'btn:knowledge:upload', '知识库上传', 'BUTTON', NULL, 0, 1
+UNION ALL SELECT 60, 'btn:knowledge:delete', '知识库删除', 'BUTTON', NULL, 0, 2
+UNION ALL SELECT 61, 'btn:knowledge:reparse', '知识库重新解析', 'BUTTON', NULL, 0, 3
+UNION ALL SELECT 62, 'menu:admin:knowledge', '知识库管理', 'MENU', NULL, 0, 10
+) t(id, resource_code, resource_name, resource_type, path, parent_id, sort_order);
 
 -- ---------------------------------------------------------------------
 -- 3. 角色→权限 关联 role_permission（uk_role_permission 去重）
@@ -871,4 +921,13 @@ SELECT p.`id`, r.`id`
 FROM `permission` p
 JOIN `resource` r ON r.`resource_code` IN ('api:admin:resource', 'menu:admin:rbac', 'menu:admin:rbac:resource', 'btn:resource:manage')
 WHERE p.`permission_code` = 'admin:resource:manage'
+ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;
+
+-- 管理端：AI 知识库管理
+INSERT INTO `permission_resource` (`permission_id`, `resource_id`)
+SELECT p.`id`, r.`id`
+FROM `permission` p
+JOIN `resource` r ON r.`resource_code` IN ('api:admin:knowledge', 'menu:admin:knowledge',
+                                          'btn:knowledge:upload', 'btn:knowledge:delete', 'btn:knowledge:reparse')
+WHERE p.`permission_code` = 'admin:knowledge:manage'
 ON DUPLICATE KEY UPDATE `resource_id` = `resource_id`;

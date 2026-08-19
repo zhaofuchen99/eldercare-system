@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.KnowledgeDocMapper">
+
+    <sql id="Base_Column_List">
+        id, title, file_name, file_path, file_type, file_size, chunk_count, status,
+        create_by, create_time, update_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.KnowledgeDoc"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO knowledge_doc (title, file_name, file_path, file_type, file_size, chunk_count, status, create_by)
+        VALUES (#{title}, #{fileName}, #{filePath}, #{fileType}, #{fileSize}, #{chunkCount}, #{status}, #{createBy})
+    </insert>
+
+    <select id="selectById" resultType="com.zfc.eldercare.core.entity.KnowledgeDoc">
+        SELECT <include refid="Base_Column_List"/>
+        FROM knowledge_doc
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <select id="selectPage" resultType="com.zfc.eldercare.core.entity.KnowledgeDoc">
+        SELECT <include refid="Base_Column_List"/>
+        FROM knowledge_doc
+        WHERE deleted = 0
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <update id="updateStatusAndChunkCount">
+        UPDATE knowledge_doc
+        SET status = #{status}, chunk_count = #{chunkCount}, update_time = NOW()
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+    <update id="delete">
+        UPDATE knowledge_doc
+        SET deleted = 1, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="countReady" resultType="long">
+        SELECT COUNT(*) FROM knowledge_doc
+        WHERE status = 'READY' AND deleted = 0
+    </select>
+</mapper>

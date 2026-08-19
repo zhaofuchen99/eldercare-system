@@ -3,10 +3,12 @@ package com.zfc.eldercare.core.config;
 import com.zfc.eldercare.core.filter.JwtAuthenticationFilter;
 import com.zfc.eldercare.core.security.RestAccessDeniedHandler;
 import com.zfc.eldercare.core.security.RestAuthenticationEntryPoint;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.DispatcherTypeRequestMatcher;
 
 /**
  * Spring Security 配置（详细设计文档 8.2）。
@@ -32,6 +35,7 @@ public class SecurityConfig {
     private final RestAccessDeniedHandler accessDeniedHandler;
 
     @Bean
+    @Order(1)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -50,6 +54,22 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .httpBasic(h -> h.disable())
                 .formLogin(f -> f.disable());
+        return http.build();
+    }
+
+    /**
+     * 异步分派（ASYNC dispatch）专用安全链。
+     * SSE（SseEmitter）流结束/超时/客户端断开时，Tomcat 会发起异步分派重进过滤器链；
+     * 此时 JwtAuthenticationFilter 因 once-per-request 标记被跳过，STATELESS 会话下 SecurityContext
+     * 也不会跨线程传递，AuthorizationFilter 会将匿名请求误判为拒绝并抛出 Access Denied。
+     * 原始 REQUEST 已完成认证授权，异步收尾分派统一放行即可。
+     */
+    @Bean
+    @Order(0)
+    public SecurityFilterChain asyncSecurityFilterChain(HttpSecurity http) throws Exception {
+        http.securityMatcher(new DispatcherTypeRequestMatcher(DispatcherType.ASYNC))
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
         return http.build();
     }
 

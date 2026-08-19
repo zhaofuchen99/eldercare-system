@@ -10,6 +10,8 @@ import com.zfc.eldercare.core.mapper.AiMessageMapper;
 import com.zfc.eldercare.core.mapper.AiSessionMapper;
 import com.zfc.eldercare.core.mapper.SysConfigMapper;
 import com.zfc.eldercare.core.service.AiChatService;
+import com.zfc.eldercare.core.service.HealthContextBuilder;
+import com.zfc.eldercare.core.service.KnowledgeRetriever;
 import com.zfc.eldercare.core.vo.ChatMessageVO;
 import com.zfc.eldercare.core.vo.ChatSessionVO;
 import com.zfc.eldercare.core.vo.PageVO;
@@ -48,6 +50,10 @@ public class AiChatServiceImpl implements AiChatService {
     private final AiSessionMapper aiSessionMapper;
     private final AiMessageMapper aiMessageMapper;
     private final SysConfigMapper sysConfigMapper;
+    /** 用户健康数据增强：把会员健康档案注入 system 提示词，实现个性化健康咨询（AI 模块核心价值） */
+    private final HealthContextBuilder healthContextBuilder;
+    /** 养老知识库 RAG：命中才注入 user 上下文（fail-open，与健康咨询解耦） */
+    private final KnowledgeRetriever knowledgeRetriever;
 
     @Override
     public Long createSession(Long userId) {
@@ -93,11 +99,11 @@ public class AiChatServiceImpl implements AiChatService {
     @Override
     public String sendMessage(Long userId, ChatMessageDTO dto) {
         AiConversationSession session = getOwnedSession(userId, dto.sessionId());
-        String context = buildContext(session.getId(), dto.content());
+        String context = buildContext(userId, session.getId(), dto.content());
         String reply;
         try {
             reply = chatClient.prompt()
-                    .system(systemPrompt())
+                    .system(systemPrompt(userId))
                     .user(context)
                     .call()
                     .content();
@@ -113,14 +119,14 @@ public class AiChatServiceImpl implements AiChatService {
     public SseEmitter streamMessage(Long userId, ChatMessageDTO dto) {
         AiConversationSession session = getOwnedSession(userId, dto.sessionId());
         String userContent = dto.content();
-        String context = buildContext(session.getId(), userContent);
+        String context = buildContext(userId, session.getId(), userContent);
 
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
         StringBuilder full = new StringBuilder();
         AtomicBoolean saved = new AtomicBoolean(false);
 
         Flux<String> flux = chatClient.prompt()
-                .system(systemPrompt())
+                .system(systemPrompt(userId))
                 .user(context)
                 .stream()
                 .content();
@@ -179,10 +185,15 @@ public class AiChatServiceImpl implements AiChatService {
         return session;
     }
 
-    /** 最近 10 轮上下文：倒序取回后反转成正序，拼接历史 + 当前问题 */
-    private String buildContext(Long sessionId, String userContent) {
+    /** 最近 10 轮上下文：知识库参考（命中才注入） + 历史 + 当前问题 */
+    private String buildContext(Long userId, Long sessionId, String userContent) {
         List<AiConversationMessage> recent = aiMessageMapper.selectRecentBySessionId(sessionId, CONTEXT_MESSAGE_COUNT);
         StringBuilder sb = new StringBuilder();
+        String knowledge = knowledgeRetriever.retrieve(userContent);
+        if (StringUtils.hasText(knowledge)) {
+            sb.append("【知识库参考】以下资料仅供回答参考，请用口语化方式向用户传达：\n")
+              .append(knowledge).append("\n\n");
+        }
         for (int i = recent.size() - 1; i >= 0; i--) {
             AiConversationMessage m = recent.get(i);
             sb.append("USER".equals(m.getRole()) ? "用户" : "助手")
@@ -244,9 +255,15 @@ public class AiChatServiceImpl implements AiChatService {
         session.setSessionName(name);
     }
 
-    private String systemPrompt() {
-        String p = sysConfigMapper.selectValueByKey(KEY_SYSTEM_PROMPT);
-        return StringUtils.hasText(p) ? p : DEFAULT_SYSTEM_PROMPT;
+    /** 系统提示词：基础人设 + 用户健康档案增强（健康数据增强，仅内部参考、不外泄） */
+    private String systemPrompt(Long userId) {
+        String base = sysConfigMapper.selectValueByKey(KEY_SYSTEM_PROMPT);
+        base = StringUtils.hasText(base) ? base : DEFAULT_SYSTEM_PROMPT;
+        String health = healthContextBuilder.build(userId);
+        if (StringUtils.hasText(health)) {
+            base += "\n\n请结合以下用户健康档案给出个性化建议（仅供内部参考，不要向用户复述档案原文）：\n" + health;
+        }
+        return base;
     }
 
     private String aiErrorMessage(Throwable error) {

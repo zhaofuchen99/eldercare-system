@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zfc.eldercare.core.mapper.KnowledgeChunkMapper">
+
+    <sql id="Base_Column_List">
+        id, doc_id, chunk_index, chunk_text, vector_id, token_count, create_time, deleted
+    </sql>
+
+    <insert id="insert" parameterType="com.zfc.eldercare.core.entity.KnowledgeChunk"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO knowledge_chunk (doc_id, chunk_index, chunk_text, vector_id, token_count)
+        VALUES (#{docId}, #{chunkIndex}, #{chunkText}, #{vectorId}, #{tokenCount})
+    </insert>
+
+    <insert id="batchInsert">
+        INSERT INTO knowledge_chunk (doc_id, chunk_index, chunk_text, vector_id, token_count)
+        VALUES
+        <foreach collection="list" item="c" separator=",">
+            (#{c.docId}, #{c.chunkIndex}, #{c.chunkText}, #{c.vectorId}, #{c.tokenCount})
+        </foreach>
+    </insert>
+
+    <select id="selectPageByDocId" resultType="com.zfc.eldercare.core.entity.KnowledgeChunk">
+        SELECT <include refid="Base_Column_List"/>
+        FROM knowledge_chunk
+        WHERE doc_id = #{docId} AND deleted = 0
+        ORDER BY chunk_index ASC
+    </select>
+
+    <select id="selectVectorIdsByDocId" resultType="string">
+        SELECT vector_id
+        FROM knowledge_chunk
+        WHERE doc_id = #{docId} AND deleted = 0 AND vector_id IS NOT NULL
+    </select>
+
+    <update id="deleteByDocId">
+        UPDATE knowledge_chunk
+        SET deleted = 1
+        WHERE doc_id = #{docId}
+    </update>
+</mapper>

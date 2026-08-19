@@ -97,6 +97,20 @@
             <artifactId>spring-ai-starter-model-openai</artifactId>
         </dependency>
 
+        <!-- RAG：Redis Vector Store（Spring AI 2.0 自带 Jedis + RedisSearch，BOM 管版本） -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-vector-store-redis</artifactId>
+        </dependency>
+
+        <!-- 可选扩展：PDF 文档解析（未引入前知识库仅支持 TXT/MD，解析器对 PDF/DOCX 抛"暂不支持"） -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.4</version>
+            <optional>true</optional>
+        </dependency>
+
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>

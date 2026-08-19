@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
     public Result<Void> handleException(Exception e) {
         String traceId = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
         log.error("系统异常 traceId={}", traceId, e);
-        Result<Void> result = Result.error(500, "系统繁忙，请稍后重试");
+        Result<Void> result = Result.error("系统繁忙，请稍后重试");
         result.setTraceId(traceId);
         return result;
     }
