@@ -9,6 +9,8 @@
 --                      permission_resource 关联 + ADMIN 角色授权
 -- 幂等性：全部使用 IF NOT EXISTS / INSERT IGNORE / ON DUPLICATE KEY，可重复执行
 -- 注意：MySQL 客户端执行时请“整段运行”，不要选中片段；此文件每段都是完整语句。
+-- 2026-08-19 收尾：知识库（RAG）暂不启用，knowledge_enabled 默认 false（含 UPDATE 兜底）；
+--   需要开启时在管理端「系统配置」把 knowledge_enabled 改为 true。
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
@@ -52,10 +54,13 @@ CREATE TABLE IF NOT EXISTS `knowledge_chunk`
 -- 2. 系统配置（RAG 参数 + AI 评分提示词），uk_config_key 幂等
 -- ---------------------------------------------------------------------
 INSERT IGNORE INTO `sys_config` (`config_key`, `config_value`, `description`) VALUES
-('knowledge_enabled', 'true', '知识库 RAG 检索开关'),
+('knowledge_enabled', 'false', '知识库 RAG 检索开关'),
 ('knowledge_top_k', '3', '知识库检索返回切片数'),
 ('knowledge_search_threshold', '0.6', '知识库检索命中相似度阈值（0-1）'),
 ('ai_assessment_system_prompt', '你是一位资深的健康评测专家，请根据问卷答案与规则分，输出 JSON：{"aiScore":0-100整数,"suggestion":不超过200字建议}', 'AI 健康评测系统提示词');
+
+-- 收尾兜底：已跑过旧脚本的库可能仍是 'true'，这里统一置为 false（幂等，可重复执行）
+UPDATE `sys_config` SET `config_value` = 'false' WHERE `config_key` = 'knowledge_enabled';
 
 -- ---------------------------------------------------------------------
 -- 3. 权限 admin:knowledge:manage，uk_permission_code 幂等
