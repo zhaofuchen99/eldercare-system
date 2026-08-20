@@ -10,8 +10,10 @@ import com.zfc.eldercare.core.mapper.AiMessageMapper;
 import com.zfc.eldercare.core.mapper.AiSessionMapper;
 import com.zfc.eldercare.core.mapper.SysConfigMapper;
 import com.zfc.eldercare.core.service.AiChatService;
+import com.zfc.eldercare.core.service.AppointmentService;
 import com.zfc.eldercare.core.service.HealthContextBuilder;
 import com.zfc.eldercare.core.service.KnowledgeRetriever;
+import com.zfc.eldercare.core.tool.AiAppointmentTools;
 import com.zfc.eldercare.core.vo.ChatMessageVO;
 import com.zfc.eldercare.core.vo.ChatSessionVO;
 import com.zfc.eldercare.core.vo.PageVO;
@@ -54,6 +56,8 @@ public class AiChatServiceImpl implements AiChatService {
     private final HealthContextBuilder healthContextBuilder;
     /** 养老知识库 RAG：命中才注入 user 上下文（fail-open，与健康咨询解耦） */
     private final KnowledgeRetriever knowledgeRetriever;
+    /** 体检预约服务：供 AI 工具调用（工具调用，按次实例化绑定 userId，见 AiAppointmentTools） */
+    private final AppointmentService appointmentService;
 
     @Override
     public Long createSession(Long userId) {
@@ -105,6 +109,7 @@ public class AiChatServiceImpl implements AiChatService {
             reply = chatClient.prompt()
                     .system(systemPrompt(userId))
                     .user(context)
+                    .tools(new AiAppointmentTools(appointmentService, userId))
                     .call()
                     .content();
         } catch (RuntimeException e) {
@@ -128,6 +133,7 @@ public class AiChatServiceImpl implements AiChatService {
         Flux<String> flux = chatClient.prompt()
                 .system(systemPrompt(userId))
                 .user(context)
+                .tools(new AiAppointmentTools(appointmentService, userId))
                 .stream()
                 .content();
 
@@ -255,7 +261,7 @@ public class AiChatServiceImpl implements AiChatService {
         session.setSessionName(name);
     }
 
-    /** 系统提示词：基础人设 + 用户健康档案增强（健康数据增强，仅内部参考、不外泄） */
+    /** 系统提示词：基础人设 + 用户健康档案增强 + 工具调用约束（健康数据仅内部参考、不外泄） */
     private String systemPrompt(Long userId) {
         String base = sysConfigMapper.selectValueByKey(KEY_SYSTEM_PROMPT);
         base = StringUtils.hasText(base) ? base : DEFAULT_SYSTEM_PROMPT;
@@ -263,6 +269,13 @@ public class AiChatServiceImpl implements AiChatService {
         if (StringUtils.hasText(health)) {
             base += "\n\n请结合以下用户健康档案给出个性化建议（仅供内部参考，不要向用户复述档案原文）：\n" + health;
         }
+        // 工具调用（体检预约）行为约束：预约会扣除会员积分，必须确认后执行
+        base += "\n\n【可执行能力——体检预约】你可以帮助会员完成体检预约（会员已登录，无需询问身份）：\n"
+                + "1. 先调用 queryPackages 展示可预约套餐（含价格/积分、适合人群），询问用户选择哪个；\n"
+                + "2. 用户选定套餐后，调用 querySlots 查询可预约日期与时段，向用户展示可选时段；\n"
+                + "3. 预约会扣除会员积分，必须先向用户说明所选时段与将扣除的积分，并等待用户明确确认\n"
+                + "   （如“好的/确认/可以”）后才可调用 bookAppointment，且 confirm 参数必须传 true；\n"
+                + "4. 预约结果要如实转告用户（成功或失败原因）。\n";
         return base;
     }
 
