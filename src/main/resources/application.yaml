@@ -25,13 +25,8 @@ spring:
       database: 0
       timeout: 3000ms
 
-  # ===== AI（DeepSeek 对话 + Ollama bge-m3 Embedding，文档 5.4 / AI 模块）=====
+  # ===== AI（DeepSeek 对话，文档 5.4 / AI 模块）=====
   ai:
-    # 关闭 Spring AI 的向量库自动配置（RedisVectorStoreAutoConfiguration 需要
-    # Spring Data 的 JedisConnectionFactory，与应用默认的 Lettuce 主连接不符）。
-    # 向量库只用自定义 knowledgeVectorStore（AiVectorStoreConfig，手动 Jedis RedisClient）。
-    vectorstore:
-      type: none
     openai:
       # 生产必须用环境变量 DEEPSEEK_API_KEY 注入真实 Key；
       # 这里给非空占位默认值，保证未配 Key 时应用也能启动（AI 调用会由业务层降级为失败标记）
@@ -41,16 +36,6 @@ spring:
         options:
           # DeepSeek 对话模型（此前缺失，用 starter 默认模型；显式指定避免歧义）
           model: deepseek-chat
-      # Embedding 指向本地 Ollama 的 OpenAI 兼容端点（bge-m3，1024 维）：
-      # 注意1：Spring AI 2.0 中 model/dimensions 平铺在 spring.ai.openai.embedding.* 下（不在 options 内）。
-      # 注意2：base-url 必须带 /v1 —— OpenAI 客户端拼的是 base-url + "/embeddings"，
-      #       Ollama 只认 /v1/embeddings，不带 /v1 会 404。
-      # 注意3：RedisVectorStore 初始化会调用 embedding 探测维度，Ollama 未启动时应用启动会失败。
-      embedding:
-        base-url: http://localhost:11434/v1
-        api-key: ollama                    # Ollama 忽略该值，但 Spring AI 要求非空
-        model: bge-m3
-        dimensions: 1024                   # bge-m3 向量维度，供 Redis 向量索引 DIM 推断
 
 # ===== MyBatis =====
 mybatis:

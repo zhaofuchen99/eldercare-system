@@ -6,6 +6,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.UUID;
 
@@ -33,6 +35,13 @@ public class GlobalExceptionHandler {
                 : "参数校验失败";
         log.warn("参数校验异常: {}", message);
         return Result.error(400, message);
+    }
+
+    /** 未匹配到任何接口或静态资源 → 404（避免被兜底 Exception 误报 500「系统繁忙」） */
+    @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
+    public Result<Void> handleNoResourceFound(Exception e) {
+        log.warn("接口或资源不存在: {}", e.getMessage());
+        return Result.error(404, "接口或资源不存在");
     }
 
     /** 未知异常 → 500，记录完整日志并生成 traceId */

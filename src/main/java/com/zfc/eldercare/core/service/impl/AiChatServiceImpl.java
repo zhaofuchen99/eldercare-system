@@ -12,7 +12,6 @@ import com.zfc.eldercare.core.mapper.SysConfigMapper;
 import com.zfc.eldercare.core.service.AiChatService;
 import com.zfc.eldercare.core.service.AppointmentService;
 import com.zfc.eldercare.core.service.HealthContextBuilder;
-import com.zfc.eldercare.core.service.KnowledgeRetriever;
 import com.zfc.eldercare.core.tool.AiAppointmentTools;
 import com.zfc.eldercare.core.vo.ChatMessageVO;
 import com.zfc.eldercare.core.vo.ChatSessionVO;
@@ -54,8 +53,6 @@ public class AiChatServiceImpl implements AiChatService {
     private final SysConfigMapper sysConfigMapper;
     /** 用户健康数据增强：把会员健康档案注入 system 提示词，实现个性化健康咨询（AI 模块核心价值） */
     private final HealthContextBuilder healthContextBuilder;
-    /** 养老知识库 RAG：命中才注入 user 上下文（fail-open，与健康咨询解耦） */
-    private final KnowledgeRetriever knowledgeRetriever;
     /** 体检预约服务：供 AI 工具调用（工具调用，按次实例化绑定 userId，见 AiAppointmentTools） */
     private final AppointmentService appointmentService;
 
@@ -191,15 +188,10 @@ public class AiChatServiceImpl implements AiChatService {
         return session;
     }
 
-    /** 最近 10 轮上下文：知识库参考（命中才注入） + 历史 + 当前问题 */
+    /** 最近 10 轮上下文：历史 + 当前问题 */
     private String buildContext(Long userId, Long sessionId, String userContent) {
         List<AiConversationMessage> recent = aiMessageMapper.selectRecentBySessionId(sessionId, CONTEXT_MESSAGE_COUNT);
         StringBuilder sb = new StringBuilder();
-        String knowledge = knowledgeRetriever.retrieve(userContent);
-        if (StringUtils.hasText(knowledge)) {
-            sb.append("【知识库参考】以下资料仅供回答参考，请用口语化方式向用户传达：\n")
-              .append(knowledge).append("\n\n");
-        }
         for (int i = recent.size() - 1; i >= 0; i--) {
             AiConversationMessage m = recent.get(i);
             sb.append("USER".equals(m.getRole()) ? "用户" : "助手")
