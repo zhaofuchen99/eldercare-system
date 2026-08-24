@@ -95,9 +95,7 @@ public class HealthRecordServiceImpl implements HealthRecordService {
         PageHelper.startPage(page, size);
         List<HealthRecord> list = healthRecordMapper.selectByUserId(userId);
         PageInfo<HealthRecord> pageInfo = new PageInfo<>(list);
-        List<HealthRecordVO> voList = list.stream().map(HealthRecordVO::from).toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, HealthRecordVO::from);
     }
 
     @Override

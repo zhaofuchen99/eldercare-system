@@ -108,9 +108,7 @@ public class MessageServiceImpl implements MessageService {
     /** 分页结果组装（PageVO 直接取 PageInfo getter 构建） */
     private PageVO<MessageVO> toPageVO(List<Message> list) {
         PageInfo<Message> pageInfo = new PageInfo<>(list);
-        List<MessageVO> voList = list.stream().map(MessageVO::from).toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, MessageVO::from);
     }
 
     private Message requireMessage(Long id) {

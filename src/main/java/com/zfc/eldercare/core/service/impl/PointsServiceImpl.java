@@ -117,9 +117,7 @@ public class PointsServiceImpl implements PointsService {
         PageHelper.startPage(page, size);
         List<PointTransaction> list = pointTransactionMapper.selectPageByUserId(userId);
         PageInfo<PointTransaction> pageInfo = new PageInfo<>(list);
-        List<PointTransactionVO> voList = list.stream().map(PointTransactionVO::from).toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, PointTransactionVO::from);
     }
 
     @Override

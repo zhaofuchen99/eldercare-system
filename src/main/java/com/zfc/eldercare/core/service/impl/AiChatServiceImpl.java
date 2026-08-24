@@ -69,11 +69,7 @@ public class AiChatServiceImpl implements AiChatService {
         PageHelper.startPage(page, size);
         List<AiConversationSession> list = aiSessionMapper.selectPageByUserId(userId);
         PageInfo<AiConversationSession> pageInfo = new PageInfo<>(list);
-        List<ChatSessionVO> voList = list.stream()
-                .map(s -> new ChatSessionVO(s.getId(), s.getSessionName(), s.getCreateTime(), s.getUpdateTime()))
-                .toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, s -> new ChatSessionVO(s.getId(), s.getSessionName(), s.getCreateTime(), s.getUpdateTime()));
     }
 
     @Override
@@ -90,11 +86,7 @@ public class AiChatServiceImpl implements AiChatService {
         PageHelper.startPage(page, size);
         List<AiConversationMessage> list = aiMessageMapper.selectPageBySessionId(sessionId);
         PageInfo<AiConversationMessage> pageInfo = new PageInfo<>(list);
-        List<ChatMessageVO> voList = list.stream()
-                .map(m -> new ChatMessageVO(m.getId(), m.getRole(), m.getMessage(), m.getStatus(), m.getCreateTime()))
-                .toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, m -> new ChatMessageVO(m.getId(), m.getRole(), m.getMessage(), m.getStatus(), m.getCreateTime()));
     }
 
     @Override
@@ -103,10 +95,7 @@ public class AiChatServiceImpl implements AiChatService {
         String context = buildContext(userId, session.getId(), dto.content());
         String reply;
         try {
-            reply = chatClient.prompt()
-                    .system(systemPrompt(userId))
-                    .user(context)
-                    .tools(new AiAppointmentTools(appointmentService, userId))
+            reply = buildPrompt(userId, context)
                     .call()
                     .content();
         } catch (RuntimeException e) {
@@ -127,10 +116,7 @@ public class AiChatServiceImpl implements AiChatService {
         StringBuilder full = new StringBuilder();
         AtomicBoolean saved = new AtomicBoolean(false);
 
-        Flux<String> flux = chatClient.prompt()
-                .system(systemPrompt(userId))
-                .user(context)
-                .tools(new AiAppointmentTools(appointmentService, userId))
+        Flux<String> flux = buildPrompt(userId, context)
                 .stream()
                 .content();
 
@@ -176,6 +162,14 @@ public class AiChatServiceImpl implements AiChatService {
     }
 
     // ========== 私有辅助 ==========
+
+    /** 构造 AI 请求：系统提示词 + 用户上下文 + 体检预约工具（同步/流式共用，避免工具绑定漂移） */
+    private ChatClient.ChatClientRequestSpec buildPrompt(Long userId, String context) {
+        return chatClient.prompt()
+                .system(systemPrompt(userId))
+                .user(context)
+                .tools(new AiAppointmentTools(appointmentService, userId));
+    }
 
     private AiConversationSession getOwnedSession(Long userId, Long sessionId) {
         AiConversationSession session = aiSessionMapper.selectById(sessionId);

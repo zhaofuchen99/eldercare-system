@@ -47,9 +47,7 @@ public class RoleServiceImpl implements RoleService {
         PageHelper.startPage(page, size);
         List<Role> list = roleMapper.selectPage(keyword);
         PageInfo<Role> pageInfo = new PageInfo<>(list);
-        List<RoleVO> voList = list.stream().map(RoleVO::from).toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, RoleVO::from);
     }
 
     @Override

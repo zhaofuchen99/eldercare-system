@@ -31,9 +31,7 @@ public class SysResourceServiceImpl implements SysResourceService {
         PageHelper.startPage(page, size);
         List<SysResource> list = sysResourceMapper.selectPage(type, keyword);
         PageInfo<SysResource> pageInfo = new PageInfo<>(list);
-        List<SysResourceVO> voList = list.stream().map(SysResourceVO::from).toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, SysResourceVO::from);
     }
 
     @Override

@@ -1,0 +1,9 @@
+target
+data
+.git
+.idea
+*.iml
+docs
+scripts
+docker-compose.yml
+.env

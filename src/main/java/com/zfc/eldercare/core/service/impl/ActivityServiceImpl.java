@@ -217,9 +217,7 @@ public class ActivityServiceImpl implements ActivityService {
         PageHelper.startPage(page, size);
         List<CommunityActivity> list = communityActivityMapper.selectPage();
         PageInfo<CommunityActivity> pageInfo = new PageInfo<>(list);
-        List<ActivityVO> voList = list.stream().map(ActivityVO::from).toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, ActivityVO::from);
     }
 
     @Override

@@ -37,9 +37,7 @@ public class PermissionServiceImpl implements PermissionService {
         PageHelper.startPage(page, size);
         List<Permission> list = permissionMapper.selectPage(keyword);
         PageInfo<Permission> pageInfo = new PageInfo<>(list);
-        List<PermissionVO> voList = list.stream().map(PermissionVO::from).toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, PermissionVO::from);
     }
 
     @Override

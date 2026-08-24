@@ -112,12 +112,7 @@ public class RbacServiceImpl implements RbacService {
     // ===== 权限解析 =====
 
     private Set<String> loadRoleCodes(Long userId) {
-        List<Long> roleIds = userRoleMapper.selectRoleIdsByUserId(userId);
-        if (roleIds.isEmpty()) {
-            return new LinkedHashSet<>();
-        }
-        return roleMapper.selectByIds(roleIds).stream()
-                .filter(r -> Integer.valueOf(1).equals(r.getStatus()))
+        return activeRolesOf(userId).stream()
                 .map(Role::getRoleCode)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
@@ -149,14 +144,20 @@ public class RbacServiceImpl implements RbacService {
         return resourceIds.stream().distinct().toList();
     }
 
-    /** 用户启用的角色 ID 集合（过滤 status=0 停用角色） */
-    private List<Long> activeRoleIdsOf(Long userId) {
+    /** 用户启用的角色（过滤 status=0 停用角色），loadRoleCodes / activeRoleIdsOf 共用 */
+    private List<Role> activeRolesOf(Long userId) {
         List<Long> roleIds = userRoleMapper.selectRoleIdsByUserId(userId);
         if (roleIds.isEmpty()) {
             return List.of();
         }
         return roleMapper.selectByIds(roleIds).stream()
                 .filter(r -> Integer.valueOf(1).equals(r.getStatus()))
+                .toList();
+    }
+
+    /** 用户启用的角色 ID 集合（过滤 status=0 停用角色） */
+    private List<Long> activeRoleIdsOf(Long userId) {
+        return activeRolesOf(userId).stream()
                 .map(Role::getId)
                 .toList();
     }

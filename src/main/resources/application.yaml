@@ -16,7 +16,7 @@ spring:
       minimum-idle: 4
       connection-timeout: 30000
 
-  # ===== Redis（redis-stack 容器，含 RediSearch 模块，端口 6380）=====
+  # ===== Redis（本地开发默认 6380，redis-stack；生产 docker-compose 用 redis:7-alpine 并覆盖为 6379）=====
   data:
     redis:
       host: localhost

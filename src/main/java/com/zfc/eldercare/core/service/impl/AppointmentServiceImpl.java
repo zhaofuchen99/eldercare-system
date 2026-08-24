@@ -250,11 +250,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         PageHelper.startPage(page, size);
         List<AppointmentPackage> list = appointmentPackageMapper.selectPage();
         PageInfo<AppointmentPackage> pageInfo = new PageInfo<>(list);
-        List<PackageVO> voList = list.stream()
-                .map(p -> PackageVO.from(p, parseItems(p.getItems())))
-                .toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, p -> PackageVO.from(p, parseItems(p.getItems())));
     }
 
     @Override

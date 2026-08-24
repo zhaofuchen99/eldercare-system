@@ -213,13 +213,9 @@ public class AssessmentServiceImpl implements AssessmentService {
         Map<Long, String> titles = ids.isEmpty() ? Map.of() : questionnaireMapper.selectByIds(ids).stream()
                 .collect(Collectors.toMap(Questionnaire::getId, Questionnaire::getTitle));
 
-        List<AssessmentResultListVO> voList = list.stream()
-                .map(r -> new AssessmentResultListVO(r.getId(), r.getQuestionnaireId(),
-                        titles.getOrDefault(r.getQuestionnaireId(), "问卷已删除"),
-                        r.getRuleScore(), r.getAiScore(), r.getCreateTime()))
-                .toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, r -> new AssessmentResultListVO(r.getId(), r.getQuestionnaireId(),
+                titles.getOrDefault(r.getQuestionnaireId(), "问卷已删除"),
+                r.getRuleScore(), r.getAiScore(), r.getCreateTime()));
     }
 
     @Override
@@ -291,12 +287,8 @@ public class AssessmentServiceImpl implements AssessmentService {
         PageHelper.startPage(page, size);
         List<Questionnaire> list = questionnaireMapper.selectPage();
         PageInfo<Questionnaire> pageInfo = new PageInfo<>(list);
-        List<QuestionnaireAdminVO> voList = list.stream()
-                .map(q -> new QuestionnaireAdminVO(q.getId(), q.getTitle(), q.getDescription(), q.getStatus(),
-                        q.getTotalScore(), q.getPassScore(), readGradeRules(q.getGradeRules()), q.getCreateTime()))
-                .toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, q -> new QuestionnaireAdminVO(q.getId(), q.getTitle(), q.getDescription(), q.getStatus(),
+                q.getTotalScore(), q.getPassScore(), readGradeRules(q.getGradeRules()), q.getCreateTime()));
     }
 
     @Override

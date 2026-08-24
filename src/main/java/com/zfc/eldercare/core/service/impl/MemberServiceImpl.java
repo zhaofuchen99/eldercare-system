@@ -42,9 +42,7 @@ public class MemberServiceImpl implements MemberService {
         PageHelper.startPage(page, size);
         List<User> list = userMapper.selectMemberPage(keyword, status, memberLevel);
         PageInfo<User> pageInfo = new PageInfo<>(list);
-        List<MemberVO> voList = list.stream().map(MemberVO::from).toList();
-        return new PageVO<>(pageInfo.getPageNum(), pageInfo.getPageSize(),
-                pageInfo.getTotal(), pageInfo.getPages(), voList);
+        return PageVO.of(pageInfo, MemberVO::from);
     }
 
     @Override
