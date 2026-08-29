@@ -36,7 +36,7 @@
         <div v-for="m in messages" :key="m.id" class="msg-row" :class="m.role === 'USER' ? 'user' : 'assistant'">
           <div class="msg-bubble" :class="{ streaming: m.streaming }">
             <div v-if="!m.message && m.streaming" class="typing">正在为您整理回答…</div>
-            <div v-else class="msg-text">{{ m.message }}</div>
+            <div v-else class="msg-text" v-html="renderMarkdown(m.message)"></div>
             <div v-if="m.status === 'FAILED'" class="msg-failed">回复失败，请检查网络后重试</div>
           </div>
         </div>
@@ -65,6 +65,7 @@ import { showConfirmDialog, showFailToast } from 'vant'
 import { createSession, getSessions, deleteSession, getMessages } from '../../api/chat'
 import { useAuthStore } from '../../store/auth'
 import { formatDateTime } from '../../utils/format'
+import { renderMarkdown } from '../../utils/markdown'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -332,6 +333,42 @@ onMounted(loadSessions)
   margin-top: 8px;
   font-size: 14px;
   color: var(--bad-color);
+}
+/* AI 回复的 Markdown 渲染样式（v-html 生成的内容需用 :deep 命中） */
+.msg-text {
+  white-space: normal;
+}
+.msg-text :deep(p) {
+  margin: 4px 0;
+}
+.msg-text :deep(ul),
+.msg-text :deep(ol) {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+.msg-text :deep(li) {
+  margin: 2px 0;
+  line-height: 1.8;
+}
+.msg-text :deep(h3),
+.msg-text :deep(h4),
+.msg-text :deep(h5),
+.msg-text :deep(h6) {
+  margin: 8px 0 4px;
+  font-weight: 600;
+}
+.msg-text :deep(strong) {
+  font-weight: 600;
+}
+.msg-text :deep(code) {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 13px;
+}
+.msg-text :deep(em) {
+  font-style: italic;
 }
 /* 底部输入栏：输入框与发送按钮都足够大 */
 .chat-input-bar {
