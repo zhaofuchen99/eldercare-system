@@ -1,0 +1,87 @@
+/* ============================================================
+   侧边栏菜单主题（深墨蓝、扁平克制）
+   Element Plus Menu 的主题色由 CSS 变量驱动：
+   不传 background-color 属性时必须手动注入这些变量，
+   否则 --el-menu-bg-color 回落为默认白色（子菜单大面积白底的根因）。
+   ============================================================ */
+
+/* 侧栏配色令牌：单色扁平，无渐变 */
+:root {
+  --sidebar-bg: #101d31;        /* 侧边栏背景：深墨蓝 */
+  --submenu-bg: #0c1727;        /* 子菜单背景：更深一档，体现层级 */
+  --sidebar-text: #93a2b8;      /* 默认文字：灰蓝 */
+  --sidebar-hover: rgba(255, 255, 255, 0.06); /* hover：极淡白 */
+}
+
+/* 注入 Element Plus Menu 主题变量：一级/二级菜单背景、文字、hover 统一由此控制 */
+.aside .menu {
+  --el-menu-bg-color: var(--sidebar-bg);
+  --el-menu-text-color: var(--sidebar-text);
+  --el-menu-hover-text-color: #ffffff;
+  --el-menu-hover-bg-color: var(--sidebar-hover);
+  --el-menu-active-color: #ffffff;
+}
+
+/* 一级菜单 / 子菜单组标题：统一尺寸、圆角、间距 */
+.aside .menu .el-menu-item,
+.aside .menu .el-sub-menu__title {
+  height: 42px;
+  line-height: 42px;
+  margin-bottom: 4px;
+  border-radius: var(--ec-radius-md);
+}
+
+/* 展开的子菜单容器：更深背景，层级清晰 */
+.aside .menu .el-menu--inline {
+  background-color: var(--submenu-bg);
+  border-radius: var(--ec-radius-md);
+  padding: 4px;
+  margin-bottom: 4px;
+}
+
+/* 二级菜单项：左缩进，无多余装饰 */
+.aside .menu .el-menu--inline .el-menu-item {
+  min-width: 0;
+  margin-bottom: 2px;
+  padding-left: 40px !important;
+}
+
+/* hover：半透明白高亮（由 --el-menu-hover-bg-color 驱动，
+   此处兜底覆盖子菜单标题等直接书写 background 的场景） */
+.aside .menu .el-menu-item:hover,
+.aside .menu .el-sub-menu__title:hover {
+  background-color: var(--sidebar-hover);
+  color: #fff;
+}
+
+/* 选中态：主色实底，无发光、无渐变 */
+.aside .menu .el-menu-item.is-active {
+  color: #fff;
+  font-weight: 500;
+  background-color: var(--ec-primary);
+}
+
+/* 子菜单组展开时，其标题同步提亮，保持视觉一致 */
+.aside .menu .el-sub-menu.is-open > .el-sub-menu__title {
+  color: #fff;
+}
+
+/* 弹出式子菜单（侧栏折叠后悬浮展开）：同样深色，且由 CSS 变量继承主题 */
+.el-menu--popup {
+  --el-menu-bg-color: var(--submenu-bg);
+  --el-menu-text-color: var(--sidebar-text);
+  --el-menu-hover-text-color: #ffffff;
+  --el-menu-hover-bg-color: var(--sidebar-hover);
+  --el-menu-active-color: #ffffff;
+  background-color: var(--submenu-bg);
+  border: none;
+  border-radius: var(--ec-radius-lg);
+}
+.el-menu--popup .el-menu-item {
+  border-radius: var(--ec-radius-sm);
+  margin: 0 4px 2px;
+}
+/* 弹出菜单中的选中项同样使用主色实底 */
+.el-menu--popup .el-menu-item.is-active {
+  background-color: var(--ec-primary);
+}
