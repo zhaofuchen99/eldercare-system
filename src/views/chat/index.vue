@@ -59,7 +59,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onMounted } from 'vue'
+import { ref, reactive, computed, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showConfirmDialog, showFailToast } from 'vant'
 import { createSession, getSessions, deleteSession, getMessages } from '../../api/chat'
@@ -148,16 +148,16 @@ function scrollToBottom() {
   })
 }
 
-// 解析 SSE：SseEmitter 每 chunk 发送 data:xxx\n\n
+// 解析 SSE：每 chunk 发送 data:xxx\n\n
+// 统一把 \r\n 归一化为 \n，兼容不同后端行尾；流结束后再 flush 一次解码器，避免多字节字符被截断
 async function* parseSSE(resp) {
   const reader = resp.body.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
-  let readerDone = false
-  while (!readerDone) {
+  while (true) {
     const { done, value } = await reader.read()
-    readerDone = done
-    if (value) buffer += decoder.decode(value, { stream: true })
+    if (done) break
+    buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n')
     let idx
     while ((idx = buffer.indexOf('\n\n')) !== -1) {
       const raw = buffer.slice(0, idx)
@@ -166,6 +166,7 @@ async function* parseSSE(resp) {
       if (line) yield extractData(line)
     }
   }
+  buffer += decoder.decode()
   if (buffer.trim()) {
     const line = buffer.split('\n').find((l) => l.startsWith('data:'))
     if (line) yield extractData(line)
@@ -190,7 +191,9 @@ async function send() {
   input.value = ''
 
   messages.value.push({ id: `u-${Date.now()}`, role: 'USER', message: content, status: 'SUCCESS' })
-  const aiMsg = { id: `a-${Date.now()}`, role: 'ASSISTANT', message: '', streaming: true, status: 'SUCCESS' }
+  // 必须用 reactive 包裹：若用普通对象再 push 进数组，后续对 aiMsg.message 的增量赋值
+  // 会绕过 reactive 代理的 set 拦截，不触发重渲染，导致整段回复一次性显示
+  const aiMsg = reactive({ id: `a-${Date.now()}`, role: 'ASSISTANT', message: '', streaming: true, status: 'SUCCESS' })
   messages.value.push(aiMsg)
   streaming.value = true
   scrollToBottom()
@@ -200,6 +203,7 @@ async function send() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
         Authorization: `Bearer ${auth.accessToken}`
       },
       body: JSON.stringify({ sessionId: currentSessionId.value, content })
