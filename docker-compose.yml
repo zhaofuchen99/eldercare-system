@@ -1,8 +1,7 @@
 # =====================================================================
 # AI 智能养老社区管理系统 · Docker Compose 编排
 # ---------------------------------------------------------------------
-# 前置：eldercare-system / eldercare-web-member / eldercare-web-admin
-#       三个工程需为同级目录；本文件位于 eldercare-system/ 下。
+# 前置：本仓库为单仓结构，前端位于 web-member/ 与 web-admin/ 子目录。
 # 使用：cp .env.example .env → 编辑 .env → docker compose up -d --build
 # 访问：会员端 http://服务器IP:80   管理端 http://服务器IP:8081
 # =====================================================================
@@ -85,7 +84,7 @@ services:
   # ---------- 会员端（Nginx 托管 + 代理 /api） ----------
   member:
     build:
-      context: ../eldercare-web-member
+      context: ./web-member
       dockerfile: Dockerfile
     container_name: eldercare-member
     restart: unless-stopped
@@ -97,7 +96,7 @@ services:
   # ---------- 管理端（Nginx 托管 + 代理 /api） ----------
   admin:
     build:
-      context: ../eldercare-web-admin
+      context: ./web-admin
       dockerfile: Dockerfile
     container_name: eldercare-admin
     restart: unless-stopped

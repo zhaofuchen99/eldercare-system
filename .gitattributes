@@ -1,2 +1,7 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+
+# 前端子项目统一 LF：避免 Windows 编辑器把整个文件的行尾改掉，
+# 在 git status 里伪装成几十个文件的「修改」（内容其实零差异）
+web-admin/** text=auto eol=lf
+web-member/** text=auto eol=lf

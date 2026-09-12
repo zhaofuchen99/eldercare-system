@@ -7,3 +7,7 @@ docs
 scripts
 docker-compose.yml
 .env
+
+# 前端子项目：后端镜像构建不需要，排除以免把 node_modules 当构建上下文发送
+web-admin
+web-member
