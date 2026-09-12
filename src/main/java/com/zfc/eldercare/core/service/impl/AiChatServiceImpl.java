@@ -11,7 +11,6 @@ import com.zfc.eldercare.core.mapper.AiSessionMapper;
 import com.zfc.eldercare.core.mapper.SysConfigMapper;
 import com.zfc.eldercare.core.service.AiChatService;
 import com.zfc.eldercare.core.service.AppointmentService;
-import com.zfc.eldercare.core.service.HealthContextBuilder;
 import com.zfc.eldercare.core.tool.AiAppointmentTools;
 import com.zfc.eldercare.core.vo.ChatMessageVO;
 import com.zfc.eldercare.core.vo.ChatSessionVO;
@@ -51,6 +50,7 @@ public class AiChatServiceImpl implements AiChatService {
     private final AiSessionMapper aiSessionMapper;
     private final AiMessageMapper aiMessageMapper;
     private final SysConfigMapper sysConfigMapper;
+
     /** 用户健康数据增强：把会员健康档案注入 system 提示词，实现个性化健康咨询（AI 模块核心价值） */
     private final HealthContextBuilder healthContextBuilder;
     /** 体检预约服务：供 AI 工具调用（工具调用，按次实例化绑定 userId，见 AiAppointmentTools） */
@@ -161,9 +161,7 @@ public class AiChatServiceImpl implements AiChatService {
         aiSessionMapper.deleteExpired(beforeTime);
     }
 
-    // ========== 私有辅助 ==========
 
-    /** 构造 AI 请求：系统提示词 + 用户上下文 + 体检预约工具（同步/流式共用，避免工具绑定漂移） */
     private ChatClient.ChatClientRequestSpec buildPrompt(Long userId, String context) {
         return chatClient.prompt()
                 .system(systemPrompt(userId))
@@ -195,7 +193,6 @@ public class AiChatServiceImpl implements AiChatService {
         return sb.toString();
     }
 
-    /** 成功交互落库：用户消息 + 助手消息 + 触碰会话时间 + 首条消息生成会话名称 */
     private void saveExchange(AiConversationSession session, String userContent, String assistantContent) {
         insertMessage(session, "USER", userContent, "SUCCESS");
         insertMessage(session, "ASSISTANT", assistantContent, "SUCCESS");
@@ -203,7 +200,6 @@ public class AiChatServiceImpl implements AiChatService {
         maybeNameSession(session, userContent);
     }
 
-    /** AI 失败落库：用户消息正常保存，助手消息打失败标记（文档 5.4） */
     private void saveFailed(AiConversationSession session, String userContent, String errorMsg) {
         insertMessage(session, "USER", userContent, "SUCCESS");
         insertMessage(session, "ASSISTANT", errorMsg, "FAILED");
@@ -220,7 +216,6 @@ public class AiChatServiceImpl implements AiChatService {
         aiMessageMapper.insert(msg);
     }
 
-    /** 首条消息后生成会话名称；AI 生成失败/超时则取首条消息前 20 字兜底（文档 5.4） */
     private void maybeNameSession(AiConversationSession session, String firstUserContent) {
         if (session.getSessionName() != null) {
             return;
@@ -247,7 +242,6 @@ public class AiChatServiceImpl implements AiChatService {
         session.setSessionName(name);
     }
 
-    /** 系统提示词：基础人设 + 用户健康档案增强 + 工具调用约束（健康数据仅内部参考、不外泄） */
     private String systemPrompt(Long userId) {
         String base = sysConfigMapper.selectValueByKey(KEY_SYSTEM_PROMPT);
         base = StringUtils.hasText(base) ? base : DEFAULT_SYSTEM_PROMPT;

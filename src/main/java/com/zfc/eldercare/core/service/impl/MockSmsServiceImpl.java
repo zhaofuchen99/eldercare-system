@@ -16,8 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 短信服务本地模拟实现（开发期）。
- * 验证码不真发短信，打印到日志方便本地测试；接入阿里云短信时替换本实现。
+ * 短信服务本地模拟实现
  */
 @Slf4j
 @Service

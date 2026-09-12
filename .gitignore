@@ -31,3 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### 环境变量（含密钥，切勿提交；模板见 .env.example） ###
+.env
+
+### 前端子项目（web-admin / web-member） ###
+web-admin/node_modules/
+web-admin/dist/
+web-admin/.idea/
+web-admin/.env
+web-member/node_modules/
+web-member/dist/
+web-member/.idea/
+web-member/.env

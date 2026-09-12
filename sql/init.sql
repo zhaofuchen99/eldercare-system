@@ -7,6 +7,7 @@
 -- 说明：在全新数据库上执行一次即可（建库 + 24 张表 + 初始数据）
 -- 使用：Navicat / IDEA Database 中「运行 SQL 文件」执行本脚本
 -- =====================================================================
+SET NAMES utf8mb4;
 
 CREATE DATABASE IF NOT EXISTS eldercare
     DEFAULT CHARACTER SET utf8mb4

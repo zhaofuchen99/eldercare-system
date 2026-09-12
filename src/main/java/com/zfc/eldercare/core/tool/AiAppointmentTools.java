@@ -68,7 +68,7 @@ public class AiAppointmentTools {
         }
     }
 
-    /** 查询指定套餐的可预约时段；未指定日期时聚合未来 7 天 */
+//    /** 查询指定套餐的可预约时段；未指定日期时聚合未来 7 天 */
     @Tool(name = "querySlots",
             description = "查询指定体检套餐的可预约时段（时段ID、时间、剩余名额）。date 可选，缺省返回未来 7 天；指定则只返回该日期。调用后向用户展示时段并询问选择，预约前应告知将扣除的积分。")
     public String querySlots(

@@ -15,8 +15,6 @@ import org.springframework.stereotype.Component;
  * 单机项目使用 Spring 内置 @Scheduled + @EnableScheduling 即可，无需引入分布式任务框架；
  * 任务执行失败需记录告警日志，便于人工介入。
  *
- * 注：5.12 中的「同步健康数据每日统计」无对应统计表/统计口径可落地（为数据量增长后的可选扩展，
- * 见 5.9 实现说明），暂不实现。
  */
 @Slf4j
 @Component

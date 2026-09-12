@@ -167,7 +167,7 @@ public class AuthServiceImpl implements AuthService {
         rt.setExpireTime(LocalDateTime.now().plusSeconds(refreshExpireSeconds));
         refreshTokenMapper.insert(rt);
 
-        // 用户已重新认证，解除用户级黑名单（此前密码找回/重置可能屏蔽）
+        // 解除用户级黑名单
         jwtUtil.removeUserBlacklist(user.getId());
 
         return LoginVO.of(accessToken, refreshToken, accessExpireSeconds, user);

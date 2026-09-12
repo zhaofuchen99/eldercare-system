@@ -1,4 +1,4 @@
-package com.zfc.eldercare.core.service;
+package com.zfc.eldercare.core.service.impl;
 
 import com.zfc.eldercare.core.entity.Appointment;
 import com.zfc.eldercare.core.entity.AppointmentPackage;
@@ -12,6 +12,7 @@ import com.zfc.eldercare.core.mapper.AssessmentResultMapper;
 import com.zfc.eldercare.core.mapper.HealthRecordMapper;
 import com.zfc.eldercare.core.mapper.QuestionnaireMapper;
 import com.zfc.eldercare.core.mapper.UserMapper;
+import com.zfc.eldercare.core.service.HealthRecordService;
 import com.zfc.eldercare.core.vo.GradeRuleVO;
 import com.zfc.eldercare.core.vo.HealthTrendVO;
 import com.zfc.eldercare.core.vo.TrendPointVO;
