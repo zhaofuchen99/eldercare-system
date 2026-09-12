@@ -39,11 +39,13 @@
 ## 📁 项目结构
 
 ```text
-AI-Elderly-Care/
-├── eldercare-server/       # Spring Boot 后端
-├── eldercare-web-admin/    # Vue3 管理端
-├── eldercare-web-member/   # Vue3 会员端
+eldercare-system/
+├── src/                    # Spring Boot 后端
+├── web-admin/              # Vue3 管理端（Element Plus）
+├── web-member/             # Vue3 会员端（Vant）
+├── sql/                    # 建库建表脚本
 ├── docs/                   # 项目文档
+├── docker-compose.yml      # 一键容器化编排
 └── README.md
 ```
 
